@@ -1,0 +1,1710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPC Simulator: Learn Cp, Cpk, Pp and Ppk by Doing | Kattamaipu</title>
+<meta name="description" content="Free SPC simulator from Kattamaipu. Run a process part by part and watch control charts, Cp, Cpk, Pp and Ppk change live. Lessons for beginners, full controls for engineers.">
+<link rel="canonical" href="https://kattamaipu.com/tools/spc/">
+<link rel="icon" href="https://kattamaipu.com/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kattamaipu">
+<meta property="og:title" content="Free SPC Simulator | Kattamaipu">
+<meta property="og:description" content="Run a process part by part and watch control charts, Cp, Cpk, Pp and Ppk change live.">
+<meta property="og:url" content="https://kattamaipu.com/tools/spc/">
+<meta property="og:image" content="https://kattamaipu.com/assets/img/og-spc-simulator.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --plane: #F6F4EC;
+    --panel: #FFFFFF;
+    --panel-2: #F8F7F2;
+    --panel-3: #EFEDE4;
+    --text: #16201B;
+    --text-2: #54594D;
+    --muted: #7C8694;
+    --border: rgba(22,32,42,0.10);
+    --border-strong: rgba(22,32,42,0.20);
+    --accent: #15603E;
+    --accent-soft: rgba(21,96,62,0.10);
+    --overall: #C2410C;
+    --good: #1a7f37;
+    --warning: #9a6700;
+    --critical: #cf222e;
+    --good-bg: rgba(26,127,55,0.10);
+    --warning-bg: rgba(154,103,0,0.12);
+    --critical-bg: rgba(207,34,46,0.10);
+    --font: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-head: "Source Serif 4", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url(https://kattamaipu.com/assets/fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url(https://kattamaipu.com/assets/fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-weight: 500; font-display: swap; src: url(https://kattamaipu.com/assets/fonts/source-serif-4-latin-500-normal.woff2) format("woff2"); }
+  /* Kattamaipu brand bar and footer */
+  .k-bar { background: #fff; border-bottom: 1px solid rgba(22,32,27,.10); }
+  .k-bar-in { max-width: 1400px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .k-bar a { color: #16201B; text-decoration: none; font-size: 14px; }
+  .k-bar a:hover { color: #15603E; }
+  .k-logo { display: block; height: 30px; width: auto; }
+  .k-nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .k-nav .k-cta { background: #15603E; color: #fff; padding: 7px 14px; border-radius: 999px; font-weight: 600; }
+  .k-nav .k-cta:hover { background: #0E4A30; color: #fff; }
+  .top h1 { font-family: var(--font-head); font-weight: 500; }
+  .k-foot { max-width: 1400px; margin: 28px auto 0; padding: 18px 20px 28px; border-top: 1px solid rgba(22,32,27,.10); font-size: 13px; color: #54594D; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .k-foot a { color: #15603E; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; font-family: var(--font); color: var(--text);
+    background: radial-gradient(ellipse at 50% -10%, #E9EEF6 0%, var(--plane) 55%);
+    background-color: var(--plane); font-size: 14px; line-height: 1.45;
+  }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 18px 16px 40px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 14px; }
+  header.top h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  header.top p { margin: 2px 0 0; color: var(--text-2); }
+  .layout { display: grid; grid-template-columns: 330px 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .layout > main { order: -1; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 1px 2px rgba(22,32,42,0.04); }
+  .stack { display: grid; gap: 14px; }
+  h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); }
+  label { display: block; font-size: 12px; color: var(--text-2); }
+  input[type=text], input[type=number], select {
+    width: 100%; margin-top: 3px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 7px;
+    font: inherit; font-size: 13px; background: #fff; color: var(--text);
+  }
+  input[type=number] { font-family: var(--mono); }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .row3 { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .error { font-size: 12px; color: var(--critical); background: var(--critical-bg); padding: 6px 8px; border-radius: 6px; margin-top: 8px; }
+  .summary { font-size: 12px; margin-top: 8px; padding: 6px 8px; background: var(--panel-2); border-radius: 6px; font-family: var(--mono); color: var(--text-2); }
+  button { font: inherit; cursor: pointer; }
+  .btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: #fff; color: var(--text); font-size: 13px; }
+  .btn:hover { background: var(--panel-2); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; margin-top: 8px; }
+  .seg button { border: 0; background: #fff; padding: 6px 10px; font-size: 12.5px; color: var(--text-2); border-right: 1px solid var(--border); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .seg.full { display: flex; }
+  .seg.full button { flex: 1; }
+  .field { margin-top: 14px; }
+  .field:first-of-type { margin-top: 4px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field-head .name { font-size: 13px; color: var(--text); font-weight: 600; }
+  .field-head .tech { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .field-head input { width: 96px; margin: 0; padding: 3px 6px; text-align: right; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 3px; background: var(--border-strong); margin: 10px 0 2px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--accent); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; cursor: pointer; }
+  .pulse { animation: pulse 1.6s ease-in-out infinite; border-radius: 8px; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(21,96,62,0); } 50% { box-shadow: 0 0 0 6px rgba(21,96,62,0.18); background: var(--accent-soft); } }
+  .locked { position: relative; }
+  .locked > .lock-cover { display: flex; }
+  .lock-cover { display: none; position: absolute; inset: 0; background: rgba(246,248,250,0.94); border-radius: 12px; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--text-2); font-size: 13px; z-index: 2; }
+
+  /* Run bar */
+  .runbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .runbar .group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .runbar .seg { margin-top: 0; }
+  .counters { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); }
+  .counters b { font-family: var(--mono); font-size: 15px; color: var(--text); margin-right: 3px; }
+  .counters .bad b { color: var(--critical); }
+  .toggles { display: flex; gap: 12px; font-size: 12.5px; color: var(--text-2); margin-top: 8px; flex-wrap: wrap; }
+  .toggles label { display: inline-flex; gap: 5px; align-items: center; font-size: 12.5px; cursor: pointer; }
+  .canvas-box { position: relative; width: 100%; }
+  canvas { display: block; width: 100%; }
+
+  /* Learn */
+  .learn { border: 1px solid rgba(36,81,176,0.35); background: linear-gradient(180deg, #F5F8FF 0%, #fff 70%); }
+  .learn-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .learn-head .stepno { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .learn-head h2 { margin: 2px 0 0; font-size: 19px; }
+  .learn-body p { margin: 10px 0 0; max-width: 860px; }
+  .learn-body .tag { font-weight: 700; }
+  .learn-body .analogy { color: var(--text-2); font-style: italic; border-left: 3px solid var(--border-strong); padding-left: 10px; }
+  .learn-body .note { font-size: 12.5px; color: var(--text-2); background: var(--panel-2); padding: 7px 10px; border-radius: 7px; }
+  .learn-body .num { font-family: var(--mono); font-weight: 600; }
+  .learn-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 10px; }
+  .dots { display: flex; gap: 6px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); cursor: pointer; }
+  .dots span.on { background: var(--accent); }
+  .guess { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .reveal { margin-top: 10px; padding: 10px 12px; border-radius: 8px; }
+
+  /* Capability */
+  .verdict { padding: 10px 12px; border-radius: 8px; font-size: 15px; font-weight: 600; }
+  .verdict small { display: block; font-weight: 400; font-size: 12.5px; margin-top: 3px; color: var(--text-2); }
+  .v-good { background: var(--good-bg); color: var(--good); }
+  .v-warn { background: var(--warning-bg); color: var(--warning); }
+  .v-bad { background: var(--critical-bg); color: var(--critical); }
+  .v-none { background: var(--panel-2); color: var(--text-2); }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+  @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { border: 1px solid var(--border); border-radius: 9px; padding: 8px 9px; background: var(--panel-2); }
+  .tile .k { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+  .tile .k i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+  .tile .v { font-family: var(--mono); font-size: 22px; font-weight: 600; margin: 2px 0; }
+  .tile .d { font-size: 11px; color: var(--muted); line-height: 1.3; }
+  .tile.dim .v { color: var(--muted); }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-top: 3px; }
+  .oot { margin-top: 10px; font-size: 12.5px; display: grid; gap: 4px; }
+  .oot div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 3px; }
+  .oot span:last-child { font-family: var(--mono); text-align: right; }
+  .eng { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  .stab { margin-top: 8px; font-size: 12.5px; padding: 6px 9px; border-radius: 7px; }
+  .signal h4 { margin: 0 0 4px; font-size: 14px; }
+  .signal p { margin: 6px 0 0; font-size: 13px; }
+  .signal .lbl { font-weight: 700; }
+  .signal.empty { color: var(--text-2); font-size: 13px; }
+  .sig-box { border-left: 4px solid var(--critical); padding-left: 10px; }
+  .chart-title { font-size: 12.5px; color: var(--text-2); margin-bottom: 4px; }
+  .scen { margin: 0 0 12px; }
+  .scen-label { font-size: 13px; font-weight: 600; }
+  .scen-label span { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+  .chip { border: 1px solid var(--border-strong); background: #fff; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; color: var(--text); }
+  .chip:hover { border-color: var(--accent); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .scen-watch { margin-top: 8px; font-size: 13px; padding: 8px 11px; border-radius: 8px; background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  .scen-watch .g-title { font-weight: 700; font-size: 14px; }
+  .scen-watch .g-intro { margin-top: 3px; color: var(--text-2); }
+  .scen-watch .g-steps { margin: 8px 0 0; padding-left: 20px; }
+  .scen-watch .g-steps li { margin: 3px 0; color: var(--text-2); }
+  .scen-watch .g-steps li.now { color: var(--text); font-weight: 600; }
+  .scen-watch .g-steps li.ok { color: var(--good); }
+  .scen-watch .cur { font-family: var(--mono); font-weight: 400; font-size: 12px; background: #fff; border-radius: 5px; padding: 1px 6px; margin-left: 4px; }
+  .scen-watch .g-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .scen-watch .g-done { margin-top: 8px; padding: 7px 9px; border-radius: 7px; background: var(--good-bg); }
+  .scen-watch .g-done b:first-child { color: var(--good); }
+  .scen-watch .g-log { margin-top: 6px; font-size: 12px; font-family: var(--mono); color: var(--text-2); }
+  .scen-watch .g-status { margin-top: 8px; padding: 6px 9px; border-radius: 7px; background: #fff; font-family: var(--mono); font-size: 12.5px; }
+  .scen-watch .g-why { margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+  .section-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .section-head .sn { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 1px; }
+  .section-head h2 { margin: 0; font-size: 17px; }
+  .section-head p { margin: 2px 0 0; color: var(--text-2); font-size: 13px; }
+  .capbox { position: relative; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .capbox.locked > .lock-cover { border-radius: 8px; }
+  .chart-row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  @media (max-width: 1150px) { .chart-row { grid-template-columns: 1fr; } }
+  .sigpanel { background: var(--panel-2); border-radius: 10px; padding: 12px; position: sticky; top: 12px; }
+  .bandstats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .bandstats div { font-size: 12px; padding: 5px 9px; border-radius: 7px; background: var(--accent-soft); color: var(--text-2); }
+  .bandstats b { color: var(--accent); font-family: var(--mono); }
+  .rec { font-size: 12px; margin-top: 8px; padding: 7px 9px; border-radius: 7px; background: var(--accent-soft); color: var(--text-2); }
+  .rec b { color: var(--text); }
+  details.calc { margin-top: 12px; border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; background: #fff; }
+  details.calc summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  @media (max-width: 760px) { .calc-grid { grid-template-columns: 1fr; } }
+  .calc-col { border-radius: 8px; padding: 9px 11px; font-size: 12.5px; }
+  .calc-col.w { background: var(--accent-soft); }
+  .calc-col.o { background: rgba(194,65,12,0.08); }
+  .calc-col h5 { margin: 0 0 4px; font-size: 13px; }
+  .calc-col .f { font-family: var(--mono); font-size: 12px; margin: 3px 0; }
+  .calc-col .f b { font-size: 13px; }
+  .calc-col .x { color: var(--text-2); margin-top: 6px; }
+  .calc-note { font-size: 12.5px; margin-top: 10px; color: var(--text-2); }
+  .gap-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .gap-table td, .gap-table th { padding: 5px 6px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .gap-table th { color: var(--text-2); font-weight: 600; }
+  .gap-table tr.hit td { background: var(--warning-bg); font-weight: 600; }
+  .gap-table tr.hit td:first-child { border-left: 3px solid var(--warning); }
+  .cm-box { margin-top: 10px; padding: 8px 11px; border-radius: 8px; background: var(--good-bg); font-size: 12.5px; }
+  .possible { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; background: var(--warning-bg); color: var(--warning); margin-bottom: 4px; }
+  .chooser table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .chooser td, .chooser th { text-align: left; vertical-align: top; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+  .chooser th { color: var(--text-2); font-weight: 600; }
+  .chooser td:first-child { font-weight: 600; white-space: nowrap; color: var(--text); }
+  footer { margin-top: 18px; font-size: 11.5px; color: var(--muted); }
+  details.help summary { cursor: pointer; font-size: 12px; color: var(--accent); margin-top: 8px; }
+  details.help div { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="k-bar"><div class="k-bar-in">
+  <a href="https://kattamaipu.com/" aria-label="Kattamaipu home"><svg class="k-logo" aria-label="Kattamaipu" xmlns="http://www.w3.org/2000/svg" viewBox="431.20 8.00 333.80 68.80" role="img"><g transform="translate(211.350,54.045)"><g id="Logo_full_color" transform="matrix(3.087,0,0,3.087,32.747,-409.015)">
+      <path d="m 70.287,117.969 -2.572,1.485 v 9.316 l 5.254,-5.254 h 3.809 l -5.370,5.370 5.547,5.547 h -3.967 l -3.515,-3.515 -1.728,1.728 v 5.321 l -2.917,-1.684 -0.019,-15.152 -3.816,2.203 v 10.735 l 9.296,5.367 9.296,-5.367 v -10.735 z" style="fill:#15603e;fill-opacity:1;fill-rule:nonzero;stroke-width:0.213" id="path110" />
+      <g id="g124">
+        <ellipse style="fill:#15603e;fill-opacity:1;stroke:none;stroke-width:0.581" id="ellipse110" cx="144.590" cy="119.676" rx="1.666" ry="1.707" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 98.844,134.345 c -0.670,0.551 -1.603,0.827 -2.798,0.827 -1.103,0 -1.997,-0.289 -2.680,-0.867 -0.670,-0.591 -1.005,-1.642 -1.005,-3.153 v -4.119 h -1.813 v -2.306 h 1.813 v -3.133 h 2.739 v 3.133 h 3.074 v 2.306 h -3.074 v 3.666 c 0,0.683 0.118,1.202 0.354,1.557 0.236,0.354 0.617,0.532 1.143,0.532 0.459,0 0.893,-0.137 1.300,-0.413 z m 7.406,0 c -0.670,0.551 -1.603,0.827 -2.798,0.827 -1.103,0 -1.997,-0.289 -2.680,-0.867 -0.670,-0.591 -1.005,-1.642 -1.005,-3.153 v -4.119 h -1.813 v -2.306 h 1.813 v -3.133 h 2.739 v 3.133 h 3.074 v 2.306 h -3.074 v 3.666 c 0,0.683 0.118,1.202 0.354,1.557 0.236,0.354 0.617,0.532 1.143,0.532 0.459,0 0.893,-0.137 1.300,-0.413 z" id="path111" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 165.670,124.727 h 2.739 v 10.209 h -2.424 c -0.052,-0.788 -0.105,-1.320 -0.157,-1.596 -0.341,0.617 -0.788,1.077 -1.340,1.379 -0.551,0.302 -1.182,0.453 -1.892,0.453 -1.143,0 -2.043,-0.367 -2.700,-1.103 -0.656,-0.735 -0.985,-1.813 -0.985,-3.232 v -6.11 h 2.739 v 5.203 c 0,1.878 0.604,2.818 1.813,2.818 0.656,0 1.189,-0.256 1.596,-0.768 0.407,-0.512 0.611,-1.228 0.611,-2.148 z" id="path112" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 145.968,134.937 h -2.739 v -10.209 h 2.739 z" id="path113" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 137.360,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path114" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 128.238,124.471 c 0.985,0 1.787,0.374 2.404,1.123 0.617,0.735 0.926,1.800 0.926,3.192 v 6.149 h -2.680 v -5.223 c 0,-1.865 -0.519,-2.798 -1.557,-2.798 -0.565,0 -1.018,0.256 -1.359,0.768 -0.328,0.512 -0.492,1.221 -0.492,2.128 v 5.124 h -2.660 v -5.223 c 0,-1.865 -0.519,-2.798 -1.557,-2.798 -0.565,0 -1.011,0.256 -1.340,0.768 -0.328,0.512 -0.492,1.221 -0.492,2.128 v 5.124 h -2.680 v -10.209 h 2.345 c 0.065,0.748 0.118,1.248 0.157,1.497 0.670,-1.169 1.642,-1.754 2.917,-1.754 0.683,0 1.281,0.177 1.793,0.532 0.512,0.354 0.900,0.880 1.162,1.576 0.328,-0.722 0.762,-1.254 1.300,-1.596 0.538,-0.341 1.143,-0.512 1.813,-0.512 z" id="path115" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 110.878,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path116" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 85.938,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path117" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 153.414,124.471 c 0.827,0 1.589,0.210 2.286,0.630 0.709,0.420 1.267,1.038 1.675,1.852 0.420,0.814 0.630,1.773 0.630,2.877 0,1.103 -0.210,2.062 -0.630,2.877 -0.407,0.801 -0.965,1.412 -1.675,1.833 -0.696,0.420 -1.458,0.630 -2.286,0.630 -0.630,0 -1.215,-0.124 -1.754,-0.374 -0.538,-0.249 -0.985,-0.630 -1.340,-1.143 v 5.853 h -2.739 v -14.782 h 2.404 l 0.059,0.670 c 0.013,0.131 0.026,0.269 0.039,0.413 0.013,0.144 0.032,0.295 0.059,0.453 0.354,-0.604 0.814,-1.051 1.379,-1.340 0.578,-0.302 1.208,-0.453 1.892,-0.453 z m -0.630,8.278 c 0.709,0 1.281,-0.256 1.714,-0.768 0.446,-0.525 0.670,-1.241 0.670,-2.148 0,-0.932 -0.216,-1.668 -0.650,-2.207 -0.433,-0.538 -1.011,-0.808 -1.734,-0.808 -0.683,0 -1.267,0.256 -1.754,0.768 -0.473,0.499 -0.709,1.248 -0.709,2.246 0,0.985 0.236,1.721 0.709,2.207 0.473,0.473 1.057,0.709 1.754,0.709 z" id="path118" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 165.670,124.727 h 2.739 v 10.209 h -2.424 c -0.052,-0.788 -0.105,-1.320 -0.157,-1.596 -0.341,0.617 -0.788,1.077 -1.340,1.379 -0.551,0.302 -1.182,0.453 -1.892,0.453 -1.143,0 -2.043,-0.367 -2.700,-1.103 -0.656,-0.735 -0.985,-1.813 -0.985,-3.232 v -6.11 h 2.739 v 5.203 c 0,1.878 0.604,2.818 1.813,2.818 0.656,0 1.189,-0.256 1.596,-0.768 0.407,-0.512 0.611,-1.228 0.611,-2.148 z" id="path119" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 145.968,134.937 h -2.739 v -10.209 h 2.739 z" id="path120" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 137.360,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path121" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 128.238,124.471 c 0.985,0 1.787,0.374 2.404,1.123 0.617,0.735 0.926,1.800 0.926,3.192 v 6.149 h -2.680 v -5.223 c 0,-1.865 -0.519,-2.798 -1.557,-2.798 -0.565,0 -1.018,0.256 -1.359,0.768 -0.328,0.512 -0.492,1.221 -0.492,2.128 v 5.124 h -2.660 v -5.223 c 0,-1.865 -0.519,-2.798 -1.557,-2.798 -0.565,0 -1.011,0.256 -1.340,0.768 -0.328,0.512 -0.492,1.221 -0.492,2.128 v 5.124 h -2.680 v -10.209 h 2.345 c 0.065,0.748 0.118,1.248 0.157,1.497 0.670,-1.169 1.642,-1.754 2.917,-1.754 0.683,0 1.281,0.177 1.793,0.532 0.512,0.354 0.900,0.880 1.162,1.576 0.328,-0.722 0.762,-1.254 1.300,-1.596 0.538,-0.341 1.143,-0.512 1.813,-0.512 z" id="path122" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 110.878,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path123" />
+        <path style="fill:#16201b;stroke-width:0.387" d="m 85.938,124.471 c 1.379,0 2.457,0.394 3.232,1.182 0.775,0.775 1.162,1.885 1.162,3.330 v 5.952 h -2.306 c -0.013,-0.105 -0.032,-0.275 -0.059,-0.512 -0.013,-0.249 -0.039,-0.466 -0.078,-0.650 -0.302,0.473 -0.696,0.827 -1.182,1.064 -0.473,0.223 -1.051,0.335 -1.734,0.335 -0.709,0 -1.359,-0.124 -1.951,-0.374 -0.578,-0.249 -1.038,-0.611 -1.379,-1.084 -0.341,-0.486 -0.512,-1.057 -0.512,-1.714 0,-0.683 0.190,-1.274 0.571,-1.773 0.394,-0.512 0.919,-0.906 1.576,-1.182 0.656,-0.275 1.379,-0.413 2.168,-0.413 0.709,0 1.438,0.118 2.187,0.354 -0.039,-1.511 -0.683,-2.266 -1.931,-2.266 -0.998,0 -1.727,0.446 -2.187,1.340 l -1.951,-1.123 c 0.367,-0.762 0.932,-1.359 1.695,-1.793 0.762,-0.446 1.655,-0.670 2.680,-0.670 z m 1.695,6.326 c -0.656,-0.157 -1.228,-0.236 -1.714,-0.236 -0.643,0 -1.143,0.118 -1.497,0.354 -0.354,0.223 -0.532,0.545 -0.532,0.965 0,0.381 0.137,0.676 0.413,0.886 0.289,0.210 0.656,0.315 1.103,0.315 0.591,0 1.110,-0.164 1.557,-0.492 0.446,-0.341 0.670,-0.808 0.670,-1.399 z" id="path124" />
+      </g>
+    </g>
+    </g></svg></a>
+  <nav class="k-nav" aria-label="Kattamaipu">
+    <a href="https://kattamaipu.com/tools/">Free tools</a><a href="https://kattamaipu.com/training/spc/">SPC training</a><a class="k-cta" href="https://kattamaipu.com/contact/?topic=SPC+training">Plan SPC training</a>
+  </nav>
+</div></div>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>SPC Simulator</h1>
+      <p>Watch your process part by part, and see what Cp, Cpk, Pp and Ppk really mean.</p>
+    </div>
+    <div class="group" style="display:flex;gap:8px;">
+      <button class="btn primary" id="learnStart">Learn step by step</button>
+      <button class="btn" id="freePlay">Free play</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: inputs -->
+    <aside class="stack">
+      <section class="card" id="specCard">
+        <h3>1. Your part</h3>
+        <label>Load an example by process
+          <select id="preset"></select>
+        </label>
+        <div class="rec" id="presetRec" hidden></div>
+        <div class="row2">
+          <label>What is measured <input type="text" id="partName"></label>
+          <label>Unit <input type="text" id="unit"></label>
+        </div>
+        <div class="seg full" id="specType">
+          <button data-v="two">± tolerance</button>
+          <button data-v="upper">Upper limit only</button>
+          <button data-v="lower">Lower limit only</button>
+        </div>
+        <div class="row3" id="specTwo">
+          <label>Nominal <input type="number" step="any" id="nominal"></label>
+          <label>+ tolerance <input type="number" step="any" min="0" id="tolPlus"></label>
+          <label>− tolerance <input type="number" step="any" min="0" id="tolMinus"></label>
+        </div>
+        <div class="row2" id="specOne" hidden>
+          <label><span id="limitLbl">Upper limit</span> <input type="number" step="any" id="limit"></label>
+          <label>Typical value <input type="number" step="any" id="typical"></label>
+        </div>
+        <div class="summary" id="specSummary"></div>
+        <div class="error" id="specError" hidden></div>
+        <div class="hint">Enter the spec as it appears on the drawing. Changing the spec restarts the run.</div>
+      </section>
+
+      <section class="card" id="procCard">
+        <div class="lock-cover">Process settings are hidden.<br>Judge the process from the data only.</div>
+        <h3>2. Your process</h3>
+        <div class="field" id="f-mean">
+          <div class="field-head"><span class="name">Process average<span class="tech">μ</span></span><input type="number" step="any" id="meanNum"></div>
+          <input type="range" id="meanSl">
+          <div class="hint">Where the parts are centred. Move it off the nominal to see Cpk fall.</div>
+        </div>
+        <div class="field" id="f-sigma">
+          <div class="field-head"><span class="name">Part-to-part spread<span class="tech">σ within</span></span><input type="number" step="any" id="sigmaNum"></div>
+          <input type="range" id="sigmaSl">
+          <div class="hint">How much consecutive parts differ from each other: the machine's own variation.</div>
+        </div>
+        <div class="field" id="f-shift">
+          <div class="field-head"><span class="name">Batch-to-batch shift<span class="tech">σ between</span></span><input type="number" step="any" id="shiftNum"></div>
+          <input type="range" id="shiftSl">
+          <div class="hint">Jumps between batches: tool change, new material lot, shift change, re-setup. This is what separates Cp from Pp.</div>
+        </div>
+        <div class="field" id="f-n">
+          <div class="field-head"><span class="name">Parts per check<span class="tech">subgroup size n</span></span><input type="number" min="1" max="25" step="1" id="nNum"></div>
+          <input type="range" id="nSl" min="1" max="25" step="1">
+          <div class="hint" id="nHint"></div>
+          <div class="seg" id="dispSeg" hidden>
+            <button data-v="R">Range (R)</button>
+            <button data-v="S">Std dev (S)</button>
+          </div>
+        </div>
+        <details class="help" id="linkBox">
+          <summary>Continuous processes: linked readings</summary>
+          <div>
+            <div class="field" id="f-phi" style="margin-top:6px;">
+              <div class="field-head"><span class="name">Reading-to-reading link<span class="tech">autocorrelation</span></span><input type="number" min="0" max="0.95" step="0.05" id="phiNum"></div>
+              <input type="range" id="phiSl" min="0" max="0.95" step="0.05">
+              <div class="hint">0 = every reading independent (normal for parts). Online gauges, furnace temperatures and bath chemistry read seconds apart are linked: each reading is close to the previous one. Try 0.9 and watch the control limits become too tight (false alarms) and Cp look better than Pp.</div>
+            </div>
+          </div>
+        </details>
+        <details class="help chooser" id="chooser">
+          <summary>Which chart should I use?</summary>
+          <div>
+            <p style="margin:0 0 4px;">Start with one question: <b>how many parts can you sensibly measure together at each check?</b></p>
+            <table>
+              <tr><th>Chart</th><th>Use when</th></tr>
+              <tr><td>I-MR<br><span class="hint">n = 1</span></td><td>Only one reading makes sense per check: one value per batch or heat (bath pH, furnace temperature, hardness per heat-treat load), destructive or expensive tests (pull force, burst test), slow processes (a few parts per shift).</td></tr>
+              <tr><td>X̄–R<br><span class="hint">n = 2 to 9</span></td><td>Parts are quick and cheap to measure and come off the machine one after another: machining, moulding, stamping, crimping. The shop-floor standard; usually n = 3 to 5 consecutive parts.</td></tr>
+              <tr><td>X̄–S<br><span class="hint">n ≥ 10</span></td><td>Large subgroups, or the calculation is done by software or an automatic gauge. S uses every reading; R only uses the largest and smallest, so it loses information as n grows.</td></tr>
+            </table>
+            <p style="margin:8px 0 0;"><b>Rule for any subgroup:</b> the parts in one check must be made under the same conditions (same machine, cavity or spindle, consecutive parts). Mixing cavities, spindles or batches in one subgroup hides real problems.</p>
+            <p style="margin:6px 0 0;"><b>Continuous processes</b> (steel, aluminium, chemicals, paper): most data is one value per heat, cast, coil or pot, so I-MR is the everyday chart. Two traps: readings taken seconds apart from an online gauge are related to each other, which makes limits too tight; and if you subgroup readings within a coil, the X̄ chart will flag every coil-to-coil difference. Chart one value per coil (I-MR), or use an I-MR-R chart.</p>
+            <p style="margin:6px 0 0;"><b>Counting instead of measuring?</b> (good/bad, number of defects) Use attribute charts: p or np for defectives, c or u for defects. They are not covered in this simulator.</p>
+          </div>
+        </details>
+        <details class="help chooser">
+          <summary>Cm, Cp or Pp: which data, which formula?</summary>
+          <div>
+            <table>
+              <tr><th>Index</th><th>Data</th><th>σ used</th></tr>
+              <tr><td>Cm / Cmk</td><td>About 50 consecutive parts: one machine, one setup, one operator, one lot. Used for machine acceptance.</td><td>Std dev of all readings</td></tr>
+              <tr><td>Cp / Cpk</td><td>Subgroups collected over time (e.g. 25 × 5). Cpk is only valid when the control chart is stable. Used for ongoing production.</td><td>σ within: R̄/d2, s̄/c4 or MR̄/1.128</td></tr>
+              <tr><td>Pp / Ppk</td><td><b>The same subgroups</b> as Cp/Cpk. Used for PPAP / initial studies, and whenever the process is not stable.</td><td>σ overall: std dev of all readings</td></tr>
+            </table>
+            <p style="margin:8px 0 0;"><b>Cp vs Pp:</b> same data, different calculation. <b>Cm vs Pp:</b> same calculation, different data. Cm is high because its data is "clean", not because the formula is special.</p>
+            <p style="margin:6px 0 0;">Cm is not defined in the AIAG SPC manual; it comes from customer and OEM procedures, and details vary. Typical: Cm ≥ 2.0, Cmk ≥ 1.67. Some customers divide by 8s instead of 6s. Always check the customer's requirement.</p>
+          </div>
+        </details>
+        <details class="help">
+          <summary>Why can I set the "true" process here?</summary>
+          <div>On a real shop floor nobody knows the true average or spread; you only see measured parts. These settings are the simulator's "behind the scenes" knobs. Every number in the results panel is estimated from the measured parts only, exactly as you would do it on the floor.</div>
+        </details>
+      </section>
+    </aside>
+
+    <!-- RIGHT: main -->
+    <main class="stack">
+      <section class="card learn" id="learn" hidden>
+        <div class="learn-head">
+          <div><div class="stepno" id="learnNo"></div><h2 id="learnTitle"></h2></div>
+          <button class="btn" id="learnExit">Exit to free play</button>
+        </div>
+        <div class="learn-body" id="learnBody"></div>
+        <div class="learn-nav">
+          <button class="btn" id="learnBack">Back</button>
+          <div class="dots" id="learnDots"></div>
+          <button class="btn primary" id="learnNext">Next</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><span class="sn">A</span><div><h2>Capability: do the parts fit the spec?</h2><p>Each part measured drives the car to its value and drops a dot. The pile of dots is the spread of your process.</p></div></div>
+        <div class="scen">
+          <div class="scen-label">What's happening on the shop floor? <span>Pick a situation. The simulator shows you which setting to change, or runs the change for you if it happens over time.</span></div>
+          <div class="chips" id="scenChips"></div>
+          <div class="scen-watch" id="scenWatch" hidden></div>
+        </div>
+        <div class="runbar">
+          <div class="group">
+            <button class="btn primary" id="playBtn">Pause</button>
+            <button class="btn" id="stepBtn" title="Measure one more part">+1 part</button>
+            <div class="seg" id="speedSeg">
+              <button data-v="slow">Slow</button>
+              <button data-v="medium">Medium</button>
+              <button data-v="fast">Fast</button>
+              <button data-v="turbo">Turbo</button>
+            </div>
+            <button class="btn" id="resetBtn">Restart run</button>
+          </div>
+          <div class="counters">
+            <span><b id="cParts">0</b>parts</span>
+            <span class="bad"><b id="cOff">0</b>out of spec</span>
+            <span class="bad"><b id="cSig">0</b>signals</span>
+          </div>
+        </div>
+        <div class="canvas-box"><canvas id="track" height="330"></canvas></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="tCurves"> Show curves (<span style="color:var(--accent)">within</span> vs <span style="color:var(--overall)">overall</span>)</label>
+          <label><input type="checkbox" id="tBands"> Show ±1σ / ±2σ / ±3σ bands</label>
+        </div>
+        <div id="bandStats" class="bandstats" hidden></div>
+        <div class="capbox" id="capCard">
+          <div class="lock-cover">Results are hidden until you make your call in the Learn panel.</div>
+          <div id="capOut"></div>
+          <details class="calc" id="calcBox" open>
+            <summary>How was this calculated? (same data, two ways)</summary>
+            <div id="calcOut"></div>
+          </details>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><span class="sn">B</span><div><h2>Stability: is the process behaving normally?</h2><p>The control chart compares each check with the process's own normal behaviour. It warns you of a change, often before any part goes out of spec.</p></div></div>
+        <div class="chart-row">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 id="chartHead">Control chart</h3>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div class="seg" id="ruleSeg" style="margin-top:0;" title="Which patterns to flag">
+                  <button data-v="basic">Basic rules (3)</button>
+                  <button data-v="all">All 8 patterns</button>
+                </div>
+                <button class="btn" id="recalcBtn" title="Recalculate control limits from the most recent 25 checks">Recalculate limits</button>
+              </div>
+            </div>
+            <div class="canvas-box"><canvas id="chart" height="360"></canvas></div>
+            <div class="hint" id="chartHint"></div>
+            <details class="help chooser" id="rulesHelp">
+              <summary>What do the rules look for?</summary>
+              <div>
+                <table>
+                  <tr><th>Pattern</th><th>Usually means</th></tr>
+                  <tr><td>Point beyond a limit</td><td>A sudden change: offset, tool, lot, operator.</td></tr>
+                  <tr><td>7 in a row on one side</td><td>The average has shifted.</td></tr>
+                  <tr><td>7 in a row up or down</td><td>A drift: tool wear, warm-up.</td></tr>
+                  <tr><td colspan="2" style="font-weight:600;color:var(--text-2);padding-top:10px;">Extra patterns ("All 8")</td></tr>
+                  <tr><td>2 of 3 beyond 2σ</td><td>Early warning of a shift (outer third of the chart).</td></tr>
+                  <tr><td>4 of 5 beyond 1σ</td><td>Early warning of a smaller shift.</td></tr>
+                  <tr><td>15 in a row within 1σ</td><td>Points hug the centre: mixed streams in a subgroup, or out-of-date limits.</td></tr>
+                  <tr><td>8 in a row outside 1σ</td><td>Points avoid the centre: two sources mixed (machines, cavities, operators).</td></tr>
+                  <tr><td>14 alternating up/down</td><td>Saw-tooth: over-adjustment, or two alternating sources.</td></tr>
+                </table>
+                <p style="margin:8px 0 0;">More rules catch problems earlier but also raise more false alarms. Many plants use the basic three plus one or two extras. A single pattern signal on a long run can be chance; a point beyond a limit rarely is.</p>
+              </div>
+            </details>
+          </div>
+          <div class="sigpanel">
+            <h3>What the chart is saying</h3>
+            <div id="sigOut" class="signal empty"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer>
+    Control chart constants and capability guidance follow the AIAG SPC reference manual. Basic rules: a point beyond a control limit; 7 points in a row on one side of the centre line; 7 points in a row going steadily up or down. Switch to "All 8 patterns" in section B for the extra Western Electric / Nelson-style patterns.
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Constants (AIAG SPC manual) ----------
+  // n: [d2, A2, D3, D4, c4, A3, B3, B4]
+  const K = {
+    2: [1.128, 1.880, 0, 3.267, 0.7979, 2.659, 0, 3.267],
+    3: [1.693, 1.023, 0, 2.574, 0.8862, 1.954, 0, 2.568],
+    4: [2.059, 0.729, 0, 2.282, 0.9213, 1.628, 0, 2.266],
+    5: [2.326, 0.577, 0, 2.114, 0.9400, 1.427, 0, 2.089],
+    6: [2.534, 0.483, 0, 2.004, 0.9515, 1.287, 0.030, 1.970],
+    7: [2.704, 0.419, 0.076, 1.924, 0.9594, 1.182, 0.118, 1.882],
+    8: [2.847, 0.373, 0.136, 1.864, 0.9650, 1.099, 0.185, 1.815],
+    9: [2.970, 0.337, 0.184, 1.816, 0.9693, 1.032, 0.239, 1.761],
+    10: [3.078, 0.308, 0.223, 1.777, 0.9727, 0.975, 0.284, 1.716],
+  };
+  // n = 11..25: d2/d3 from the AIAG table; the rest derived from them and c4.
+  (() => {
+    const d2 = [3.173, 3.258, 3.336, 3.407, 3.472, 3.532, 3.588, 3.640, 3.689, 3.735, 3.778, 3.819, 3.858, 3.895, 3.931];
+    const d3 = [0.787, 0.778, 0.770, 0.763, 0.756, 0.750, 0.744, 0.739, 0.734, 0.729, 0.724, 0.720, 0.716, 0.712, 0.708];
+    const lnG = x => { // Lanczos log-gamma
+      const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+      x -= 1; let a = c[0]; const t = x + g + 0.5; for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+      return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+    };
+    for (let n = 11; n <= 25; n++) {
+      const D2 = d2[n - 11], D3v = d3[n - 11];
+      const c4 = Math.sqrt(2 / (n - 1)) * Math.exp(lnG(n / 2) - lnG((n - 1) / 2));
+      const b = 3 * Math.sqrt(1 - c4 * c4) / c4;
+      K[n] = [D2, 3 / (D2 * Math.sqrt(n)), Math.max(0, 1 - 3 * D3v / D2), 1 + 3 * D3v / D2, c4, 3 / (c4 * Math.sqrt(n)), Math.max(0, 1 - b), 1 + b];
+    }
+  })();
+  const BASELINE = 25;      // checks used to set control limits
+  const RUN = 7;            // AIAG run / trend length
+  const MAX_SG = 300;       // checks kept in memory
+  const SPEEDS = { slow: 1.0, medium: 0.4, fast: 0.12, turbo: 0.015 };
+
+  const W1 = 'Only one reading makes sense per check';
+  const AC = 'Readings from an online gauge taken seconds apart are not independent; space them out or chart one value per coil, otherwise limits come out too tight and you get false alarms.';
+  const PRESETS = {
+    // group, label, part, unit, type, spec, recommended n / chart, why
+    shaft:   { g: 'Machining (CNC turning / milling)', label: 'Turned shaft OD, Ø20 h6 (0 / −0.013 mm)', part: 'Shaft outer diameter', unit: 'mm', type: 'two', nominal: 20, plus: 0, minus: 0.013, n: 5, why: 'Consecutive parts off one spindle, quick to measure with a micrometer.' },
+    bore:    { g: 'Machining (CNC turning / milling)', label: 'Bore, Ø25 H7 (+0.021 / 0 mm)', part: 'Bore diameter', unit: 'mm', type: 'two', nominal: 25, plus: 0.021, minus: 0, n: 5, why: 'Consecutive parts, quick to measure with a bore gauge.' },
+    ra:      { g: 'Machining (CNC turning / milling)', label: 'Ground surface roughness Ra (max 0.8 µm)', part: 'Surface roughness Ra', unit: 'µm', type: 'upper', limit: 0.8, typical: 0.4, n: 1, why: W1 + ': each roughness trace takes time, so one reading per check. Upper limit only, so no Cp/Pp.' },
+    flange:  { g: 'Sheet metal stamping / pressing', label: 'Flange height (15 ± 0.2 mm)', part: 'Flange height', unit: 'mm', type: 'two', nominal: 15, plus: 0.2, minus: 0.2, n: 5, why: 'Consecutive strokes from one die, quick to check on a height gauge.' },
+    pierce:  { g: 'Sheet metal stamping / pressing', label: 'Pierced hole diameter (Ø8 +0.10 / 0 mm)', part: 'Pierced hole diameter', unit: 'mm', type: 'two', nominal: 8, plus: 0.1, minus: 0, n: 5, why: 'Consecutive strokes, measured with a pin gauge set or calliper. Unequal tolerance example.' },
+    shotwt:  { g: 'Injection moulding', label: 'Part weight (12.50 ± 0.15 g)', part: 'Part weight', unit: 'g', type: 'two', nominal: 12.5, plus: 0.15, minus: 0.15, n: 5, why: 'Consecutive shots from ONE cavity per subgroup. Never mix cavities in a subgroup; chart each cavity separately.' },
+    wall:    { g: 'Injection moulding', label: 'Wall thickness (2.00 ± 0.10 mm)', part: 'Wall thickness', unit: 'mm', type: 'two', nominal: 2.0, plus: 0.1, minus: 0.1, n: 5, why: 'Consecutive shots from one cavity, measured at the same location.' },
+    dcwall:  { g: 'Casting (aluminium die casting)', label: 'Cast wall thickness (4.0 ± 0.3 mm)', part: 'Cast wall thickness', unit: 'mm', type: 'two', nominal: 4.0, plus: 0.3, minus: 0.3, n: 5, why: 'Consecutive castings from one die cavity.' },
+    melt:    { g: 'Casting (aluminium die casting)', label: 'Melt temperature (680 ± 10 °C)', part: 'Melt temperature', unit: '°C', type: 'two', nominal: 680, plus: 10, minus: 10, n: 1, why: W1 + ': one temperature per check from the holding furnace. Several readings at the same moment would be nearly identical.' },
+    forglen: { g: 'Forging', label: 'Forged length (120 ± 0.8 mm)', part: 'Forged length', unit: 'mm', type: 'two', nominal: 120, plus: 0.8, minus: 0.8, n: 5, why: 'Consecutive forgings from one die.' },
+    hrc:     { g: 'Forging', label: 'Hardness after heat treatment (28–34 HRC)', part: 'Hardness', unit: 'HRC', type: 'two', nominal: 31, plus: 3, minus: 3, n: 1, why: W1 + ': one result per heat-treatment load. Parts in the same load all saw the same furnace cycle.' },
+    crimp:   { g: 'Wire harness', label: 'Crimp height (1.45 ± 0.05 mm)', part: 'Crimp height', unit: 'mm', type: 'two', nominal: 1.45, plus: 0.05, minus: 0.05, n: 5, why: 'Consecutive crimps from one applicator, quick to measure with a crimp micrometer.' },
+    pull:    { g: 'Wire harness', label: 'Crimp pull-off force (min 150 N)', part: 'Crimp pull-off force', unit: 'N', type: 'lower', limit: 150, typical: 210, n: 1, why: W1 + ': the test is destructive, so you test as few as possible. Lower limit only, so no Cp/Pp.' },
+    nugget:  { g: 'Welding', label: 'Spot weld nugget diameter (min 5.0 mm)', part: 'Weld nugget diameter', unit: 'mm', type: 'lower', limit: 5.0, typical: 6.0, n: 1, why: W1 + ': measured by a destructive peel or chisel test.' },
+    torque:  { g: 'Assembly', label: 'Tightening torque (25 ± 2.5 Nm)', part: 'Tightening torque', unit: 'Nm', type: 'two', nominal: 25, plus: 2.5, minus: 2.5, n: 5, why: 'Consecutive joints from one spindle. With automatic DC tools that record every joint, X̄–S with larger n is common.' },
+    press:   { g: 'Assembly', label: 'Bearing press-fit force (3.0–5.0 kN)', part: 'Press-fit force', unit: 'kN', type: 'two', nominal: 4.0, plus: 1.0, minus: 1.0, n: 10, disp: 'S', why: 'The press monitors every part automatically, so large subgroups cost nothing; with n = 10 use X̄–S.' },
+    zinc:    { g: 'Surface treatment', label: 'Zinc plating thickness (8–12 µm)', part: 'Plating thickness', unit: 'µm', type: 'two', nominal: 10, plus: 2, minus: 2, n: 5, why: '5 parts from the same plating load. Load-to-load differences show up as batch shift: a typical Cp ≫ Pp case.' },
+    hose:    { g: 'Rubber / plastic extrusion', label: 'Hose outer diameter (16.0 ± 0.3 mm)', part: 'Hose outer diameter', unit: 'mm', type: 'two', nominal: 16, plus: 0.3, minus: 0.3, n: 5, why: 'Readings taken a short interval apart along the line.' },
+    ph:      { g: 'Process chemistry / heat treatment', label: 'Wash bath pH (6.5–7.5)', part: 'Bath pH', unit: 'pH', type: 'two', nominal: 7.0, plus: 0.5, minus: 0.5, n: 1, why: W1 + ': one sample per check from a well-mixed bath. Several samples at the same moment would be nearly identical.' },
+    cchem:   { g: 'Steel: iron & steel making', label: 'Carbon content per heat (0.18–0.22 %)', part: 'Carbon content', unit: '%', type: 'two', nominal: 0.20, plus: 0.02, minus: 0.02, n: 1, why: W1 + ': one spectrometer result per heat. Every tonne in the heat has the same chemistry.' },
+    hmsi:    { g: 'Steel: iron & steel making', label: 'Hot metal silicon per cast (0.30–0.60 %)', part: 'Hot metal silicon', unit: '%', type: 'two', nominal: 0.45, plus: 0.15, minus: 0.15, n: 1, shift: 0.06, why: W1 + ': one result per blast furnace cast. Furnace condition changes slowly, so expect drifts and shifts.' },
+    ys:      { g: 'Steel: rolling & coating', label: 'Yield strength, E250 plate (min 250 MPa)', part: 'Yield strength', unit: 'MPa', type: 'lower', limit: 250, typical: 300, n: 1, why: W1 + ': tensile testing is destructive, one test per heat or coil. Lower limit only, so no Cp/Pp.' },
+    crthk:   { g: 'Steel: rolling & coating', label: 'Cold-rolled strip thickness (1.00 ± 0.05 mm)', part: 'Strip thickness', unit: 'mm', type: 'two', nominal: 1.00, plus: 0.05, minus: 0.05, n: 5, shift: 0.1, why: '5 readings along each coil form one check. Coil-to-coil differences are large, so watch the X̄ chart signal almost constantly: limits built from within-coil variation are too narrow for the coil averages. In practice, chart coil averages with I-MR (try n = 1). ' + AC },
+    gauge:   { g: 'Steel: rolling & coating', label: 'Strip thickness, online gauge every second (1.00 ± 0.05 mm)', part: 'Strip thickness (gauge)', unit: 'mm', type: 'two', nominal: 1.00, plus: 0.05, minus: 0.05, n: 1, phi: 0.9, why: 'Readings one second apart from an X-ray gauge are linked: each one is close to the previous one (see "Continuous processes: linked readings", set to 0.9). Watch the I-chart flag false alarms and Cp look better than Pp. Fix: chart one value per coil, or space readings far apart.' },
+    coiltemp:{ g: 'Steel: rolling & coating', label: 'Hot strip coiling temperature (600 ± 20 °C)', part: 'Coiling temperature', unit: '°C', type: 'two', nominal: 600, plus: 20, minus: 20, n: 1, why: W1 + ': chart the average temperature of each coil. ' + AC },
+    zincmass:{ g: 'Steel: rolling & coating', label: 'Galvanising zinc coating mass (min 120 g/m²)', part: 'Zinc coating mass', unit: 'g/m²', type: 'lower', limit: 120, typical: 140, n: 1, why: W1 + ': one triple-spot test result per coil. Lower limit only, so no Cp/Pp. Running far above the minimum costs zinc, so centring matters for cost too.' },
+    bathtemp:{ g: 'Aluminium: smelting & casting', label: 'Potline bath temperature (958 ± 7 °C)', part: 'Bath temperature', unit: '°C', type: 'two', nominal: 958, plus: 7, minus: 7, n: 1, why: W1 + ': one measurement per pot per round. Chart each pot separately; mixing pots hides pot-specific problems.' },
+    fe:      { g: 'Aluminium: smelting & casting', label: 'Metal iron content (max 0.20 % Fe)', part: 'Iron content', unit: '%', type: 'upper', limit: 0.20, typical: 0.12, n: 1, why: W1 + ': one spectro result per tapping or cast. Upper limit only, so no Cp/Pp.' },
+    alsheet: { g: 'Aluminium: rolling & extrusion', label: 'Cold-rolled sheet thickness (0.250 ± 0.005 mm)', part: 'Sheet thickness', unit: 'mm', type: 'two', nominal: 0.25, plus: 0.005, minus: 0.005, n: 5, shift: 0.08, why: '5 readings along each coil form one check; coil-to-coil differences show up as batch shift (Cp ≫ Pp). ' + AC },
+    extwall: { g: 'Aluminium: rolling & extrusion', label: 'Extruded profile wall thickness (2.00 ± 0.15 mm)', part: 'Profile wall thickness', unit: 'mm', type: 'two', nominal: 2.0, plus: 0.15, minus: 0.15, n: 5, why: 'Consecutive cut lengths from the same billet and die. A new billet or die change starts a new batch.' },
+    furnace: { g: 'Process chemistry / heat treatment', label: 'Hardening furnace temperature (860 ± 10 °C)', part: 'Furnace temperature', unit: '°C', type: 'two', nominal: 860, plus: 10, minus: 10, n: 1, why: W1 + ': one reading per check of a slow-changing process.' },
+  };
+
+  // ---------- State ----------
+  const S = {
+    part: '', unit: '', type: 'two', nominal: 0, plus: 0, minus: 0, limit: 0, typical: 0,
+    usl: null, lsl: null, C: 0, W: 1, dec: 2, target: 0,
+    mean: 0, sigma: 0, shift: 0, n: 1, disp: 'R',
+    speed: 'medium', running: true, showCurves: false, showBands: false, phi: 0, ruleSet: 'basic',
+  };
+  let subgroups = [];   // {vals, x, r, s, mr, batch, rules:[]}
+  let current = [];
+  let batchNo = 0, batchOffset = 0;
+  let limits = null;
+  let lastSignal = null;
+  let partCount = 0, offCount = 0, sigCount = 0;
+  let lastPart = null, arPrev = 0, firstParts = [], sgTotal = 0;
+  let dirty = true;
+  let learnStep = -1;     // -1 = free play
+  let guess = null;       // for "your turn"
+
+  // ---------- Math helpers ----------
+  const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };
+  function gauss() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function erfc(x) { // x >= 0, A&S 7.1.26 form, good relative accuracy in tails
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+    return y * Math.exp(-x * x);
+  }
+  function upperTail(z) { return z >= 0 ? 0.5 * erfc(z / Math.SQRT2) : 1 - 0.5 * erfc(-z / Math.SQRT2); }
+  function pOut(m, s) {
+    let p = 0;
+    if (S.usl != null) p += upperTail((S.usl - m) / s);
+    if (S.lsl != null) p += upperTail((m - S.lsl) / s);
+    return Math.min(1, p);
+  }
+  const outSpec = v => (S.usl != null && v > S.usl) || (S.lsl != null && v < S.lsl);
+  const pdf = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * Math.sqrt(2 * Math.PI));
+
+  // ---------- Formatting ----------
+  const fmt = (v, extra = 0) => (v == null || !isFinite(v)) ? '—' : v.toFixed(Math.max(0, S.dec + extra));
+  const fmtU = (v, extra = 0) => fmt(v, extra) + (S.unit ? ' ' + S.unit : '');
+  const f2 = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(2);
+  function sig2(x) { if (x >= 100) { const p = Math.pow(10, Math.floor(Math.log10(x)) - 1); return Math.round(x / p) * p; } return Math.round(x); }
+  function oneIn(p) {
+    if (p < 1e-6) return 'less than 1 in a million';
+    if (p > 0.5) return 'more than half the parts';
+    return 'about 1 in ' + sig2(1 / p).toLocaleString('en-US');
+  }
+  function ppm(p) { if (p < 1e-6) return '< 1 ppm'; return Math.round(p * 1e6).toLocaleString('en-US') + ' ppm'; }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const el = {
+    preset: $('preset'), partName: $('partName'), unit: $('unit'), specType: $('specType'),
+    specTwo: $('specTwo'), specOne: $('specOne'), nominal: $('nominal'), tolPlus: $('tolPlus'), tolMinus: $('tolMinus'),
+    limit: $('limit'), typical: $('typical'), limitLbl: $('limitLbl'), specSummary: $('specSummary'), specError: $('specError'),
+    meanSl: $('meanSl'), meanNum: $('meanNum'), sigmaSl: $('sigmaSl'), sigmaNum: $('sigmaNum'),
+    shiftSl: $('shiftSl'), shiftNum: $('shiftNum'), nSl: $('nSl'), nNum: $('nNum'), nHint: $('nHint'), dispSeg: $('dispSeg'),
+    playBtn: $('playBtn'), stepBtn: $('stepBtn'), speedSeg: $('speedSeg'), resetBtn: $('resetBtn'), recalcBtn: $('recalcBtn'),
+    cParts: $('cParts'), cOff: $('cOff'), cSig: $('cSig'), tCurves: $('tCurves'), tBands: $('tBands'),
+    capOut: $('capOut'), sigOut: $('sigOut'), chartHead: $('chartHead'), chartHint: $('chartHint'),
+    track: $('track'), chart: $('chart'), capCard: $('capCard'), procCard: $('procCard'),
+    learn: $('learn'), learnNo: $('learnNo'), learnTitle: $('learnTitle'), learnBody: $('learnBody'),
+    learnBack: $('learnBack'), learnNext: $('learnNext'), learnExit: $('learnExit'), learnDots: $('learnDots'),
+  };
+
+  function setSeg(seg, v) { seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+
+  // ---------- Spec ----------
+  (function fillPresets() {
+    const groups = {};
+    Object.entries(PRESETS).forEach(([k, p]) => { (groups[p.g] = groups[p.g] || []).push([k, p]); });
+    $('preset').innerHTML = Object.entries(groups).map(([g, items]) =>
+      `<optgroup label="${esc(g)}">${items.map(([k, p]) => `<option value="${k}">${esc(p.label)}</option>`).join('')}</optgroup>`).join('')
+      + '<option value="custom">Custom: type your own part</option>';
+  })();
+  function chartName(n, disp) { return n === 1 ? 'I-MR' : `X̄–${disp}`; }
+  function showRec(p) {
+    const r = $('presetRec');
+    if (!p) { r.hidden = true; return; }
+    r.hidden = false;
+    r.innerHTML = `<b>Recommended chart: ${chartName(p.n, p.disp || 'R')}, n = ${p.n}.</b> ${esc(p.why)}`;
+  }
+  function loadPreset(key) {
+    const p = PRESETS[key]; if (!p) return;
+    el.preset.value = key;
+    el.partName.value = p.part; el.unit.value = p.unit; S.type = p.type;
+    S.n = p.n; S.disp = p.disp || 'R'; S.phi = p.phi || 0; syncPhi(); showRec(p);
+    if (p.type === 'two') { el.nominal.value = p.nominal; el.tolPlus.value = p.plus; el.tolMinus.value = p.minus; }
+    else { el.limit.value = p.limit; el.typical.value = p.typical; }
+    applySpec(true);
+    if (p.shift) { setProcess({ cp: 1.33, off: 0, shift: p.shift }); resetRun(); }
+  }
+
+  function showSpecFields() {
+    setSeg(el.specType, S.type);
+    el.specTwo.hidden = S.type !== 'two';
+    el.specOne.hidden = S.type === 'two';
+    el.limitLbl.textContent = S.type === 'upper' ? 'Upper limit (max)' : 'Lower limit (min)';
+  }
+
+  function applySpec(resetProcess) {
+    showSpecFields();
+    S.part = el.partName.value.trim() || 'Measurement';
+    S.unit = el.unit.value.trim();
+    let usl = null, lsl = null, C, W, target, err = '';
+    if (S.type === 'two') {
+      const nom = parseFloat(el.nominal.value), pl = parseFloat(el.tolPlus.value), mi = parseFloat(el.tolMinus.value);
+      if (![nom, pl, mi].every(isFinite)) err = 'Enter the nominal and both tolerances.';
+      else if (pl < 0 || mi < 0) err = 'Enter tolerances as positive numbers. For 25 +0.021/−0, type 0.021 and 0.';
+      else if (pl + mi <= 0) err = 'The total tolerance must be greater than zero.';
+      else { usl = nom + pl; lsl = nom - mi; C = (usl + lsl) / 2; W = usl - lsl; target = nom; }
+    } else {
+      const lim = parseFloat(el.limit.value), typ = parseFloat(el.typical.value);
+      if (![lim, typ].every(isFinite)) err = 'Enter the limit and a typical value.';
+      else if (S.type === 'upper' && typ >= lim) err = 'For an upper limit, the typical value must be below the limit.';
+      else if (S.type === 'lower' && typ <= lim) err = 'For a lower limit, the typical value must be above the limit.';
+      else { if (S.type === 'upper') usl = lim; else lsl = lim; C = typ; W = 2 * Math.abs(lim - typ); target = typ; }
+    }
+    if (err) { el.specError.textContent = err; el.specError.hidden = false; return false; }
+    el.specError.hidden = true;
+    Object.assign(S, { usl, lsl, C, W, target });
+    S.dec = Math.min(5, Math.max(0, Math.ceil(-Math.log10(W)) + 2));
+    const u = S.unit ? ' ' + esc(S.unit) : '';
+    el.specSummary.innerHTML = S.type === 'two'
+      ? `LSL ${fmt(lsl)} &nbsp;·&nbsp; USL ${fmt(usl)}${u} &nbsp;·&nbsp; tolerance ${fmt(W)}${u}`
+      : (S.type === 'upper' ? `USL ${fmt(usl)}${u} (no lower limit)` : `LSL ${fmt(lsl)}${u} (no upper limit)`);
+    setRanges();
+    if (resetProcess) { setProcess({ cp: 1.33, off: 0, shift: 0 }); setScenario(null); }
+    resetRun();
+    return true;
+  }
+
+  // ---------- Process controls ----------
+  const pairs = [
+    { key: 'mean', sl: 'meanSl', num: 'meanNum' },
+    { key: 'sigma', sl: 'sigmaSl', num: 'sigmaNum' },
+    { key: 'shift', sl: 'shiftSl', num: 'shiftNum' },
+  ];
+  function setRanges() {
+    const step = Math.pow(10, -(S.dec + 1));
+    const r = { mean: [nonNeg() ? Math.max(0, S.C - 0.75 * S.W) : S.C - 0.75 * S.W, S.C + 0.75 * S.W], sigma: [S.W / 120, S.W / 2], shift: [0, S.W / 4] };
+    pairs.forEach(p => {
+      const sl = el[p.sl]; sl.min = r[p.key][0]; sl.max = r[p.key][1]; sl.step = step;
+      el[p.num].step = step;
+    });
+  }
+  function syncControls() {
+    pairs.forEach(p => {
+      el[p.sl].value = S[p.key];
+      el[p.num].value = S[p.key].toFixed(S.dec + 1);
+    });
+    el.nSl.value = S.n; el.nNum.value = S.n;
+    el.dispSeg.hidden = S.n === 1;
+    setSeg(el.dispSeg, S.disp);
+    el.nHint.textContent = S.n === 1
+      ? 'n = 1: one part per check → Individuals & Moving Range (I-MR) chart. Use for slow processes or destructive tests.'
+      : `n = ${S.n}: ${S.n} consecutive parts per check → X̄–${S.disp} chart.` + (S.n >= 10 && S.disp === 'R' ? ' For n ≥ 10, Std dev (S) is the better choice.' : (S.n < 10 && S.disp === 'S' ? ' For small n, Range (R) is simpler and works just as well.' : ''));
+  }
+  // cp: target short-term index; off: fraction of half-tolerance toward the (nearest) limit; shift as fraction of W
+  function setProcess({ cp, off = 0, shift = 0, n }) {
+    const dir = S.usl != null ? 1 : -1;
+    S.mean = S.C + dir * off * S.W / 2;
+    S.sigma = S.W / (6 * cp);
+    S.shift = shift * S.W;
+    if (n != null) S.n = n;
+    syncControls();
+  }
+  pairs.forEach(p => {
+    el[p.sl].addEventListener('input', () => { S[p.key] = parseFloat(el[p.sl].value); el[p.num].value = S[p.key].toFixed(S.dec + 1); onProcessChange(); });
+    el[p.num].addEventListener('change', () => {
+      let v = parseFloat(el[p.num].value); if (!isFinite(v)) { syncControls(); return; }
+      const sl = el[p.sl]; v = Math.min(parseFloat(sl.max), Math.max(parseFloat(sl.min), v));
+      S[p.key] = v; syncControls(); onProcessChange();
+    });
+  });
+  function onProcessChange() { if (scen && SCEN[scen].kind === 'event') setScenario(null); dirty = true; renderLearn(); renderGuide(); }
+  function setN(n) {
+    n = Math.round(Math.min(25, Math.max(1, n || 1)));
+    if (n === S.n) { syncControls(); return; }
+    S.n = n; syncControls(); resetRun();
+  }
+  el.nSl.addEventListener('input', () => setN(parseInt(el.nSl.value, 10)));
+  el.nNum.addEventListener('change', () => setN(parseInt(el.nNum.value, 10)));
+  el.dispSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.disp = b.dataset.v; syncControls(); resetRun(); });
+
+  // spec listeners
+  el.preset.addEventListener('change', () => { if (el.preset.value !== 'custom') loadPreset(el.preset.value); else showRec(null); });
+  el.specType.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.dataset.v === S.type) return;
+    S.type = b.dataset.v; el.preset.value = 'custom'; showRec(null);
+    // seed sensible one-sided values from the current spec
+    if (S.type !== 'two' && !(isFinite(parseFloat(el.limit.value)) && isFinite(parseFloat(el.typical.value)))) {
+      el.typical.value = (+S.C).toFixed(S.dec);
+      el.limit.value = (S.type === 'upper' ? S.C + S.W / 2 : S.C - S.W / 2).toFixed(S.dec);
+    } else if (S.type !== 'two') {
+      const lim = parseFloat(el.limit.value), typ = parseFloat(el.typical.value);
+      if ((S.type === 'upper' && typ >= lim) || (S.type === 'lower' && typ <= lim)) el.limit.value = (2 * typ - lim).toFixed(S.dec);
+    }
+    applySpec(true);
+  });
+  ['partName', 'unit'].forEach(k => el[k].addEventListener('input', () => { el.preset.value = 'custom'; showRec(null); S.part = el.partName.value.trim() || 'Measurement'; S.unit = el.unit.value.trim(); applySpecLabelsOnly(); }));
+  function applySpecLabelsOnly() { const ok = applySpecSummaryOnly(); dirty = true; renderLearn(); return ok; }
+  function applySpecSummaryOnly() {
+    const u = S.unit ? ' ' + esc(S.unit) : '';
+    el.specSummary.innerHTML = S.type === 'two'
+      ? `LSL ${fmt(S.lsl)} &nbsp;·&nbsp; USL ${fmt(S.usl)}${u} &nbsp;·&nbsp; tolerance ${fmt(S.W)}${u}`
+      : (S.type === 'upper' ? `USL ${fmt(S.usl)}${u} (no lower limit)` : `LSL ${fmt(S.lsl)}${u} (no upper limit)`);
+    return true;
+  }
+  ['nominal', 'tolPlus', 'tolMinus', 'limit', 'typical'].forEach(k => el[k].addEventListener('change', () => { el.preset.value = 'custom'; showRec(null); applySpec(true); }));
+
+  // ---------- Shop-floor scenarios ----------
+  // Kind 'guide': the user moves the slider, guided step by step.
+  // Kind 'event': the simulator moves the slider during the run and says so.
+  const dirS = () => (S.usl != null ? 1 : -1);
+  const limName = () => (S.usl != null ? 'upper limit' : 'lower limit');
+  const NAMES = { mean: 'Process average', sigma: 'Part-to-part spread', shift: 'Batch-to-batch shift' };
+  const FIELD = { mean: 'f-mean', sigma: 'f-sigma', shift: 'f-shift' };
+  const SCEN = {
+    good: {
+      label: 'Good process', kind: 'guide', start: { cp: 1.0, off: 0.35 },
+      intro: 'Starting point: a process that is a little off-centre and a little too wide. Make it good in two moves.',
+      steps: () => [
+        { key: 'mean', to: S.C, text: `Drag <b>Process average</b> back to the ${S.type === 'two' ? 'nominal' : 'typical value'} (${fmtU(S.C)}).`, done: () => Math.abs(S.mean - S.C) <= 0.06 * S.W / 2 },
+        { key: 'sigma', to: S.W / (6 * 1.67), text: `Drag <b>Part-to-part spread</b> down to about ${fmtU(S.W / (6 * 1.67), 1)}.`, done: () => S.sigma <= S.W / (6 * 1.55) },
+      ],
+      watch: 'Cp, Cpk, Pp and Ppk end up close together and above 1.33, with no signals on the control chart.',
+      why: 'A good process needs both: <b>capable</b> (centred, and the spread fits the tolerance) and <b>stable</b> (behaves the same over time).',
+    },
+    off: {
+      label: 'Setting off-centre', kind: 'guide', start: { cp: 1.67 },
+      intro: 'Starting point: a good, centred process.',
+      steps: () => [{ key: 'mean', to: S.C + dirS() * 0.6 * S.W / 2, text: `Drag <b>Process average</b> towards the ${limName()}, to about ${fmtU(S.C + dirS() * 0.6 * S.W / 2)}.`, done: () => dirS() * (S.mean - S.C) >= 0.5 * S.W / 2 }],
+      watch: 'The pile moves towards the limit. Cp stays high, because the spread did not change, but Cpk drops.',
+      why: 'On the shop floor this is a wrong offset or tool setting. The machine is fine; only the centring is wrong. Fix: re-centre the setting.',
+    },
+    wide: {
+      label: 'Too much variation', kind: 'guide', start: { cp: 1.67 },
+      intro: 'Starting point: a good, centred process.',
+      steps: () => [{ key: 'sigma', to: S.W / 4.8, text: `Drag <b>Part-to-part spread</b> up to about ${fmtU(S.W / 4.8, 1)}.`, done: () => S.sigma >= S.W / 5.4 }],
+      watch: 'The pile widens and spills over the limits. Cp and Cpk both fall below 1.',
+      why: 'On the shop floor: worn spindle or bearings, a loose fixture, inconsistent material. Re-centring will not help; the variation itself must come down.',
+    },
+    batch: {
+      label: 'Batch-to-batch jumps', kind: 'guide', start: { cp: 1.67 },
+      intro: 'Starting point: a good, centred process with no batch-to-batch shift.',
+      steps: () => [{ key: 'shift', to: 0.12 * S.W, text: `Drag <b>Batch-to-batch shift</b> up to about ${fmtU(0.12 * S.W, 1)}.`, done: () => S.shift >= 0.1 * S.W }],
+      watch: 'Curves are now switched on. Each batch is tight, but batches sit at different levels (shaded columns on the control chart). Cp stays high, Pp drops: the orange curve is wider than the blue one.',
+      why: 'On the shop floor: tool change, new material lot, shift change, re-setup. Fix: standardise setups and changeovers. The machine is not the problem.',
+    },
+    machine: {
+      label: 'Machine study (Cm/Cmk)', kind: 'guide', start: { cp: 2.0 }, noReset: true,
+      intro: 'Starting point: a very good machine, one setup, one operator, one material lot. No batch shifts yet.',
+      steps: () => [
+        { key: null, text: 'Let the first 50 consecutive parts run. This is the machine study. The result appears under "How was this calculated?".', done: () => partCount >= 50, now: () => `${Math.min(partCount, 50)} of 50 parts` },
+        { key: 'shift', to: 0.15 * S.W, text: `Now the machine goes into real production. Drag <b>Batch-to-batch shift</b> up to about ${fmtU(0.15 * S.W, 1)} (tool changes, new lots, other shifts).`, done: () => S.shift >= 0.12 * S.W },
+        { key: null, text: 'Let production run to 400 parts.', done: () => partCount >= 400, now: () => `${partCount} of 400 parts` },
+      ],
+      watch: 'Cm/Cmk (first 50 parts) stay high, but Pp/Ppk for the whole run drop well below them. Cp/Cpk stay close to Cm, because σ within does not see the batch jumps.',
+      why: 'Cm uses the same formula as Pp (std dev of all readings), but only on a short, clean run. It proves the machine, not the process. A machine that passes its Cm study can still deliver a poor Ppk.',
+    },
+    step: {
+      label: 'Sudden shift (wrong offset)', kind: 'event', start: { cp: 1.67 },
+      does: 'At check 35 the simulator will move <b>Process average</b> in one jump, like someone typing a wrong offset.',
+      status: () => stepDone ? `The jump happened at check 35: average moved from ${fmtU(evBase)} to ${fmtU(S.mean)}.` : `Check ${subgroups.length} of 35: running normally, no change yet.`,
+      watch: 'The control chart should flag the jump within a few checks, usually before many parts go out of spec.',
+    },
+    drift: {
+      label: 'Gradual drift (tool wear)', kind: 'event', start: { cp: 1.67 },
+      does: 'From check 25 the simulator will move <b>Process average</b> a little with every part, like a tool wearing down.',
+      status: () => subgroups.length < 25 ? `Check ${subgroups.length} of 25: new tool, no wear yet.` : `Tool wearing since check 25: average has moved from ${fmtU(evBase)} to ${fmtU(S.mean)}.`,
+      watch: 'Look for "7 in a row above the centre line" or "7 in a row going up". That is the signal to change the tool, before parts go out of spec.',
+    },
+    tamper: {
+      label: 'Over-adjusting operator', kind: 'event', start: { cp: 1.67 },
+      does: 'After every part, the simulator acts like an operator who corrects the machine by the last error: if a part comes out slightly big, the setting is moved down by the same amount. <b>Process average</b> will jitter.',
+      status: () => `Adjustments made: ${partCount}. Last adjustment: ${lastAdj == null ? '—' : (lastAdj > 0 ? '+' : '') + fmt(lastAdj, 1) + (S.unit ? ' ' + esc(S.unit) : '')}.`,
+      watch: 'Compare the spread with "Good process": about 40% wider (Pp drops from about 1.67 to about 1.2). Lesson: never adjust a stable process because of one part. Also note Cp drops below Pp: the zig-zag inflates the ranges, the "unusual" row in the gap table.',
+    },
+  };
+  let scen = null, stepDone = false, guideDone = false, evBase = null, lastAdj = null, changeLog = [];
+  $('scenChips').innerHTML = Object.entries(SCEN).map(([k, v]) => `<button class="chip" data-s="${k}">${v.label}</button>`).join('');
+  function pulseFields(keys) {
+    Object.values(FIELD).forEach(f => $(f).classList.remove('pulse'));
+    keys.forEach(k => $(FIELD[k]).classList.add('pulse'));
+  }
+  function setScenario(k) {
+    scen = k && SCEN[k] ? k : null; stepDone = false; guideDone = false; lastAdj = null; changeLog = [];
+    document.querySelectorAll('#scenChips .chip').forEach(b => b.classList.toggle('on', b.dataset.s === scen));
+    if (!scen && learnStep < 0) pulseFields([]);
+    renderGuide(true);
+  }
+  function startScenario(k) {
+    if (learnStep >= 0) exitLearn();
+    setScenario(k);
+    S.phi = 0; syncPhi();
+    setProcess(Object.assign({ cp: 1.33, off: 0, shift: 0 }, SCEN[k].start));
+    evBase = S.mean;
+    resetRun(); S.running = true; el.playBtn.textContent = 'Pause';
+    renderGuide(true);
+    const k0 = SCEN[k].kind === 'event' ? 'mean' : SCEN[k].steps()[0].key;
+    const f = k0 ? $(FIELD[k0]) : null;
+    if (f) { const r = f.getBoundingClientRect(); if (r.top < 0 || r.bottom > window.innerHeight) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
+  $('scenChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) startScenario(b.dataset.s); });
+  let lastGuideHtml = '';
+  function renderGuide(force) {
+    const w = $('scenWatch');
+    if (!scen) { w.hidden = true; lastGuideHtml = ''; return; }
+    const sc = SCEN[scen];
+    let html;
+    if (sc.kind === 'guide') {
+      const steps = sc.steps();
+      let cur = -1; const ok = [];
+      steps.forEach((st, i) => { ok[i] = (i === 0 || ok[i - 1]) && st.done(); if (!ok[i] && cur === -1) cur = i; });
+      if (cur === -1 && !guideDone) {
+        guideDone = true;
+        if (scen === 'batch' || scen === 'machine') setView(true, S.showBands);
+        if (!sc.noReset) resetRun();
+      }
+      pulseFields(guideDone || !steps[cur].key ? [] : [steps[cur].key]);
+      const nowTxt = st => st.key ? `Now: ${fmtU(S[st.key], st.key === 'mean' ? 0 : 1)}` : (st.now ? st.now() : '');
+      const list = steps.map((st, i) => `<li class="${ok[i] ? 'ok' : (i === cur ? 'now' : '')}">${ok[i] ? '✓ ' : ''}${st.text}${i === cur && nowTxt(st) ? ` <span class="cur">${nowTxt(st)}</span>` : ''}</li>`).join('');
+      html = `<div class="g-title">${sc.label}</div>
+        <div class="g-intro">${sc.intro}</div>
+        <ol class="g-steps">${list}</ol>
+        ${guideDone
+          ? `<div class="g-done"><b>✓ Done.</b> ${sc.noReset ? '' : 'The run restarted so the numbers show only the new setting. '}<b>Watch for:</b> ${sc.watch}</div>`
+          : `<div class="g-row"><span class="hint">${steps[cur].key ? 'The setting to change is highlighted on the left.' : 'Nothing to change in this step; just let it run.'}</span><button class="btn" data-doit="1">Do it for me</button></div>`}
+        ${changeLog.length ? `<div class="g-log">Changed for you: ${changeLog.join('; ')}</div>` : ''}
+        <div class="g-why"><b>Why it matters:</b> ${sc.why}</div>`;
+    } else {
+      pulseFields(['mean']);
+      html = `<div class="g-title">${sc.label}</div>
+        <div class="g-intro"><b>What the simulator does:</b> ${sc.does} You don't need to touch anything; watch the highlighted slider on the left.</div>
+        <div class="g-status">${sc.status()}</div>
+        <div class="g-why"><b>Watch for:</b> ${sc.watch}</div>`;
+    }
+    if (force || html !== lastGuideHtml) { w.innerHTML = html; lastGuideHtml = html; }
+    w.hidden = false;
+  }
+  function tweenTo(key, to, ms) {
+    return new Promise(res => {
+      const from = S[key], t0 = performance.now();
+      const stepF = t => {
+        const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        S[key] = from + (to - from) * e; syncControls(); dirty = true; renderGuide();
+        k < 1 ? requestAnimationFrame(stepF) : res();
+      };
+      requestAnimationFrame(stepF);
+    });
+  }
+  $('scenWatch').addEventListener('click', async e => {
+    if (!e.target.closest('[data-doit]') || !scen || SCEN[scen].kind !== 'guide') return;
+    e.target.closest('[data-doit]').disabled = true;
+    for (const st of SCEN[scen].steps()) {
+      if (st.done()) continue;
+      if (!st.key) {
+        setSpeed('turbo'); S.running = true; el.playBtn.textContent = 'Pause';
+        await new Promise(res => { const t = setInterval(() => { if (st.done() || !scen) { clearInterval(t); res(); } }, 100); });
+        setSpeed('fast'); continue;
+      }
+      const from = S[st.key];
+      await tweenTo(st.key, st.to, 800);
+      changeLog.push(`${NAMES[st.key]} ${fmt(from, st.key === 'mean' ? 0 : 1)} → ${fmt(st.to, st.key === 'mean' ? 0 : 1)}`);
+    }
+    renderGuide(true);
+  });
+  function scenarioBefore() {
+    if (!scen) return;
+    const ev = SCEN[scen].kind === 'event' ? scen : null, dir = dirS();
+    if (ev === 'step' && !stepDone && sgTotal >= 35 && current.length === 0) { S.mean += dir * 0.45 * S.W / 2; stepDone = true; syncControls(); }
+    if (ev === 'drift' && sgTotal >= 25) { S.mean += dir * 0.004 * S.W / S.n; }
+  }
+  function scenarioAfter(v) {
+    if (scen === 'tamper') { lastAdj = -(v - S.target); S.mean += lastAdj; }
+  }
+
+  // ---------- Simulation ----------
+  function resetRun() {
+    subgroups = []; current = []; batchNo = 0; batchOffset = 0; limits = null; lastSignal = null;
+    partCount = 0; offCount = 0; sigCount = 0; lastPart = null; car.x = null; car.flash = 0; arPrev = 0; firstParts = []; sgTotal = 0;
+    dirty = true;
+  }
+  function batchLen() { return S.n === 1 ? 10 : 5; }
+  function nextPart() {
+    if (current.length === 0 && sgTotal % batchLen() === 0) {
+      batchNo++;
+      batchOffset = S.shift > 0 ? gauss() * S.shift : 0;
+    }
+    scenarioBefore();
+    const phi = S.phi || 0;
+    arPrev = phi * arPrev + Math.sqrt(1 - phi * phi) * gauss() * S.sigma;
+    const v = S.mean + batchOffset + arPrev;
+    if (firstParts.length < 50) firstParts.push(v);
+    scenarioAfter(v);
+    current.push(v); partCount++; lastPart = v;
+    if (outSpec(v)) { offCount++; car.flash = 0.8; }
+    if (current.length >= S.n) closeSubgroup();
+    dirty = true;
+  }
+  function closeSubgroup() {
+    const vals = current; current = [];
+    const g = { vals, x: mean(vals), r: Math.max(...vals) - Math.min(...vals), s: vals.length > 1 ? sd(vals) : 0, mr: null, batch: batchNo, rules: [] };
+    const prev = subgroups[subgroups.length - 1];
+    if (S.n === 1 && prev) g.mr = Math.abs(g.x - prev.x);
+    subgroups.push(g); sgTotal++;
+    if (subgroups.length > MAX_SG) subgroups.shift();
+    if (!limits && subgroups.length >= BASELINE) computeLimits(subgroups.slice(-BASELINE));
+    if (limits) checkRules(g);
+  }
+  function dispVal(g) { return S.n === 1 ? g.mr : (S.disp === 'R' ? g.r : g.s); }
+  function computeLimits(sgs) {
+    const xbb = mean(sgs.map(g => g.x));
+    if (S.n === 1) {
+      const mrs = sgs.map(g => g.mr).filter(v => v != null);
+      const mrb = mean(mrs);
+      limits = { cl: xbb, ucl: xbb + 2.66 * mrb, lcl: xbb - 2.66 * mrb, dcl: mrb, ducl: 3.267 * mrb, dlcl: 0 };
+    } else if (S.disp === 'R') {
+      const k = K[S.n], rb = mean(sgs.map(g => g.r));
+      limits = { cl: xbb, ucl: xbb + k[1] * rb, lcl: xbb - k[1] * rb, dcl: rb, ducl: k[3] * rb, dlcl: k[2] * rb };
+    } else {
+      const k = K[S.n], sb = mean(sgs.map(g => g.s));
+      limits = { cl: xbb, ucl: xbb + k[5] * sb, lcl: xbb - k[5] * sb, dcl: sb, ducl: k[7] * sb, dlcl: k[6] * sb };
+    }
+  }
+  const LIMIT_RULES = ['x-high', 'x-low', 'd-high', 'd-low'];
+  function checkRules(g, idx) {
+    if (idx == null) idx = subgroups.length - 1;
+    const L = limits, rules = [];
+    if (g.x > L.ucl || g.x < L.lcl) rules.push(g.x > L.ucl ? 'x-high' : 'x-low');
+    const d = dispVal(g);
+    if (d != null && (d > L.ducl || (L.dlcl > 0 && d < L.dlcl))) rules.push(d > L.ducl ? 'd-high' : 'd-low');
+    const lastN = k => idx + 1 >= k ? subgroups.slice(idx + 1 - k, idx + 1).map(h => h.x) : null;
+    const last = lastN(RUN);
+    if (last) {
+      if (last.every(x => x > L.cl)) rules.push('run-above');
+      else if (last.every(x => x < L.cl)) rules.push('run-below');
+      let up = true, dn = true;
+      for (let i = 1; i < last.length; i++) { if (!(last[i] > last[i - 1])) up = false; if (!(last[i] < last[i - 1])) dn = false; }
+      if (up) rules.push('trend-up'); else if (dn) rules.push('trend-down');
+    }
+    if (S.ruleSet === 'all') {
+      const sx = (L.ucl - L.cl) / 3, z = x => (x - L.cl) / sx, zx = z(g.x);
+      const l3 = lastN(3), l5 = lastN(5), l15 = lastN(15), l8 = lastN(8), l14 = lastN(14);
+      if (l3 && Math.abs(zx) > 2 && Math.abs(zx) <= 3 && l3.filter(x => Math.sign(z(x)) === Math.sign(zx) && Math.abs(z(x)) > 2).length >= 2) rules.push('zoneA');
+      if (l5 && Math.abs(zx) > 1 && l5.filter(x => Math.sign(z(x)) === Math.sign(zx) && Math.abs(z(x)) > 1).length >= 4) rules.push('zoneB');
+      if (l15 && l15.every(x => Math.abs(z(x)) < 1)) rules.push('hug');
+      if (l8 && l8.every(x => Math.abs(z(x)) > 1) && l8.some(x => z(x) > 0) && l8.some(x => z(x) < 0)) rules.push('mixture');
+      if (l14) { let alt = true; for (let i = 2; i < l14.length; i++) if (Math.sign(l14[i] - l14[i - 1]) !== -Math.sign(l14[i - 1] - l14[i - 2]) || l14[i] === l14[i - 1]) alt = false; if (alt) rules.push('alternate'); }
+    }
+    g.rules = rules;
+    if (rules.length) { sigCount++; lastSignal = { rule: rules[0], g, inSpec: !g.vals.some(outSpec), at: idx + 1 }; }
+  }
+  function reevaluate() {
+    sigCount = 0; lastSignal = null;
+    subgroups.forEach(g => g.rules = []);
+    if (limits) subgroups.forEach((g, i) => checkRules(g, i));
+    dirty = true;
+  }
+  function stability() {
+    if (!limits) return 'unknown';
+    const recent = subgroups.slice(-BASELINE).filter(g => g.rules.length);
+    if (!recent.length) return 'stable';
+    // group flagged checks into episodes (consecutive flagged checks = one episode)
+    const idxs = subgroups.slice(-BASELINE).map((g, i) => g.rules.length ? i : -1).filter(i => i >= 0);
+    const eps = []; idxs.forEach((v, k) => { if (k === 0 || v !== idxs[k - 1] + 1) eps.push(1); else eps[eps.length - 1]++; });
+    // one short, isolated episode can be a false alarm; repeated or sustained signals cannot
+    const beyond = subgroups.slice(-BASELINE).filter(g => g.rules.some(r => LIMIT_RULES.includes(r))).length;
+    return eps.length === 1 && beyond <= 2 ? 'possible' : 'unstable';
+  }
+
+  // ---------- Capability ----------
+  function capability() {
+    const need = S.n === 1 ? 20 : 10;
+    if (subgroups.length < need) return { ready: false, have: subgroups.length, need };
+    const vals = subgroups.flatMap(g => g.vals);
+    const m = mean(vals), sO = sd(vals);
+    let sW;
+    if (S.n === 1) sW = mean(subgroups.map(g => g.mr).filter(v => v != null)) / 1.128;
+    else if (S.disp === 'R') sW = mean(subgroups.map(g => g.r)) / K[S.n][0];
+    else sW = mean(subgroups.map(g => g.s)) / K[S.n][4];
+    const idx = s => {
+      const up = S.usl != null ? (S.usl - m) / (3 * s) : Infinity;
+      const lo = S.lsl != null ? (m - S.lsl) / (3 * s) : Infinity;
+      return { p: (S.usl != null && S.lsl != null) ? (S.usl - S.lsl) / (6 * s) : null, k: Math.min(up, lo) };
+    };
+    const w = idx(sW), o = idx(sO);
+    const state = stability();
+    let cm = null;
+    if (firstParts.length >= 50) {
+      const fm = mean(firstParts), fs = sd(firstParts);
+      const up = S.usl != null ? (S.usl - fm) / (3 * fs) : Infinity, lo = S.lsl != null ? (fm - S.lsl) / (3 * fs) : Infinity;
+      cm = { m: fm, s: fs, cm: (S.usl != null && S.lsl != null) ? (S.usl - S.lsl) / (6 * fs) : null, cmk: Math.min(up, lo) };
+    }
+    const mrs = S.n === 1 ? subgroups.map(g => g.mr).filter(v => v != null) : null;
+    return {
+      ready: true, m, sW, sO, cp: w.p, cpk: w.k, pp: o.p, ppk: o.k,
+      ootW: pOut(m, sW), ootO: pOut(m, sO), found: vals.filter(outSpec).length, total: vals.length,
+      limitsSet: !!limits, state, stable: state === 'stable' || state === 'possible', nSg: subgroups.length,
+      bar: S.n === 1 ? mean(mrs) : (S.disp === 'R' ? mean(subgroups.map(g => g.r)) : mean(subgroups.map(g => g.s))),
+      cm, batches: new Set(subgroups.map(g => g.batch)).size,
+    };
+  }
+  function band(v) {
+    if (v == null || !isFinite(v)) return { cls: 'v-none', label: '—' };
+    if (v >= 1.67) return { cls: 'v-good', label: 'Highly capable' };
+    if (v >= 1.33) return { cls: 'v-good', label: 'Capable' };
+    if (v >= 1.0) return { cls: 'v-warn', label: 'Marginal' };
+    return { cls: 'v-bad', label: 'Not capable' };
+  }
+  function verdict(c) {
+    const useCpk = c.stable;
+    const v = useCpk ? c.cpk : c.ppk;
+    const b = band(v);
+    const main = {
+      'Highly capable': 'Highly capable: plenty of room inside the tolerance.',
+      'Capable': 'Capable: meets the usual 1.33 minimum.',
+      'Marginal': 'Marginal: very little room for error.',
+      'Not capable': 'Not capable: out-of-tolerance parts are being made.',
+    }[b.label];
+    const tips = [];
+    const nearest = c.cp != null && c.cp >= 1.33 && c.cpk < 0.8 * c.cp;
+    if (nearest) tips.push('The spread is fine, but the average is off-centre. Re-centre the process.');
+    if (c.cpk != null && c.ppk != null && c.cpk >= 1.0 && c.ppk < 0.85 * c.cpk) tips.push('The machine can do it, but batch-to-batch shifts are costing you. Control setups, tool changes and material lots.');
+    if (c.cp != null && c.cp < 1.0) tips.push('The spread is wider than the tolerance. Re-centring alone will not fix this; the variation itself must come down.');
+    const basis = useCpk ? `Judged on Cpk ${f2(c.cpk)} (process ${c.state === 'possible' ? 'looks stable; one possible signal to check' : 'is stable'}).` : (c.limitsSet ? `Judged on Ppk ${f2(c.ppk)}, because the process is not stable.` : `Judged on Ppk ${f2(c.ppk)} until control limits are set.`);
+    return { cls: b.cls, html: `${main}<small>${basis}${tips.length ? ' ' + tips.join(' ') : ''}</small>` };
+  }
+  function tileHtml(name, value, desc, color, na) {
+    const b = band(value);
+    const badge = na ? '' : `<span class="badge ${b.cls}">${b.label}</span>`;
+    return `<div class="tile ${na ? 'dim' : ''}"><div class="k"><i style="background:${color}"></i>${name}</div>
+      <div class="v">${na ? 'n/a' : f2(value)}</div>${badge}<div class="d">${desc}</div></div>`;
+  }
+  function renderCap(c) {
+    if (!c.ready) {
+      el.capOut.innerHTML = `<div class="verdict v-none">Collecting data… ${c.have} of ${c.need} checks<small>Capability needs enough parts to estimate the spread reliably.</small></div>`;
+      return;
+    }
+    const v = verdict(c);
+    const one = S.type !== 'two';
+    const naNote = one ? '<div class="hint">Cp and Pp need both limits (they compare tolerance width to spread). With a one-sided spec, use Cpk and Ppk.</div>' : '';
+    el.capOut.innerHTML = `
+      <div class="verdict ${v.cls}">${v.html}</div>
+      <div class="tiles">
+        ${tileHtml('Cp', c.cp, 'Uses σ within (neighbouring parts). Spread vs tolerance; ignores centring.', 'var(--accent)', one)}
+        ${tileHtml('Cpk', c.cpk, 'Uses σ within. Includes centring.', 'var(--accent)', false)}
+        ${tileHtml('Pp', c.pp, 'Uses σ overall (all parts). Spread vs tolerance; ignores centring.', 'var(--overall)', one)}
+        ${tileHtml('Ppk', c.ppk, 'Uses σ overall. Includes centring: what the customer received.', 'var(--overall)', false)}
+      </div>
+      ${naNote}
+      <div class="stab ${c.state === 'stable' ? 'v-good' : (c.limitsSet ? 'v-warn' : 'v-none')}">${
+        c.state === 'stable' ? 'Process is stable (no signals in the last 25 checks), so Cpk is meaningful.'
+        : c.state === 'possible' ? 'Probably stable: one isolated signal in the last 25 checks. Even a perfectly stable process gives an occasional false alarm on a long run. Check what happened at that point; if nothing changed, carry on. Repeated or sustained signals mean a real change.'
+        : c.limitsSet ? 'Process is NOT stable: the control chart shows signals. Cpk is not reliable; use Ppk and find the cause.'
+        : `Stability unknown until control limits are set (${Math.min(c.nSg, BASELINE)} of ${BASELINE} checks).`}</div>
+      <div class="oot">
+        <div><span>Expected out of tolerance using σ within</span><span>${oneIn(c.ootW)} · ${ppm(c.ootW)}</span></div>
+        <div><span>Expected out of tolerance using σ overall</span><span>${oneIn(c.ootO)} · ${ppm(c.ootO)}</span></div>
+        <div><span>Actually found in this run</span><span>${c.found} of ${c.total} parts</span></div>
+      </div>
+      `;
+    renderCalc(c);
+  }
+  function renderCalc(c) {
+    const out = $('calcOut');
+    if (!c.ready) { out.innerHTML = '<div class="calc-note">Waiting for enough data…</div>'; return; }
+    const u = S.unit ? ' ' + esc(S.unit) : '';
+    const two = S.type === 'two';
+    const T = two ? S.usl - S.lsl : null;
+    const est = S.n === 1 ? ['MR̄', '1.128', 'average moving range (difference between each part and the one before)']
+      : S.disp === 'R' ? ['R̄', K[S.n][0].toFixed(3), `average range within each check of ${S.n}`]
+      : ['s̄', K[S.n][4].toFixed(4), `average std dev within each check of ${S.n}`];
+    const kLine = (sig) => {
+      const parts = [];
+      if (S.usl != null) parts.push(`(${fmt(S.usl)} − ${fmt(c.m)})`);
+      if (S.lsl != null) parts.push(`(${fmt(c.m)} − ${fmt(S.lsl)})`);
+      return parts.length > 1 ? `min[${parts.join(', ')}] ÷ (3 × ${fmt(sig, 1)})` : `${parts[0]} ÷ (3 × ${fmt(sig, 1)})`;
+    };
+    const ratio = c.sO / c.sW;
+    const gapTxt = ratio > 1.15 ? `σ overall is <b>${Math.round((ratio - 1) * 100)}% larger</b> than σ within: the process moves between checks (setups, lots, drift).`
+      : ratio < 0.87 ? `σ overall is <b>smaller</b> than σ within. Unusual: check how checks are formed (mixed cavities or spindles inflate the within-check spread), linked readings, or over-adjustment.`
+      : 'σ within and σ overall are about the same: the process behaves the same between checks as within them.';
+    const hiW = (two ? c.cp : c.cpk) >= 1.33, hiO = (two ? c.pp : c.ppk) >= 1.33;
+    const row = (a, b, txt, act) => `<tr class="${hiW === a && hiO === b ? 'hit' : ''}"><td>${a ? 'High' : 'Low'}</td><td>${b ? 'High' : 'Low'}</td><td>${txt}</td><td>${act}</td></tr>`;
+    const nm = two ? ['Cp', 'Pp'] : ['Cpk', 'Ppk'];
+    out.innerHTML = `
+      <div class="calc-note" style="margin-top:8px;">Same data for both: <b>${c.total} ${esc(S.part.toLowerCase())} readings</b> (${c.nSg} checks of ${S.n}${c.batches > 1 && S.shift > 0 ? `, across ${c.batches} batches` : ''}). Only the way σ is calculated differs.</div>
+      <div class="calc-grid">
+        <div class="calc-col w">
+          <h5 style="color:var(--accent)">σ within → Cp, Cpk</h5>
+          <div class="f">σ within = ${est[0]} ÷ ${S.n === 1 ? 'd2' : (S.disp === 'R' ? 'd2' : 'c4')} = ${fmt(c.bar, 1)} ÷ ${est[1]} = <b>${fmt(c.sW, 1)}${u}</b></div>
+          ${two ? `<div class="f">Cp = ${fmt(T)} ÷ (6 × ${fmt(c.sW, 1)}) = <b>${f2(c.cp)}</b></div>` : ''}
+          <div class="f">Cpk = ${kLine(c.sW)} = <b>${f2(c.cpk)}</b></div>
+          <div class="x">${est[0]} is the ${est[2]}. It only compares parts with their neighbours, so jumps <b>between</b> checks are not counted.</div>
+        </div>
+        <div class="calc-col o">
+          <h5 style="color:var(--overall)">σ overall → Pp, Ppk</h5>
+          <div class="f">σ overall = std dev of all ${c.total} readings = <b>${fmt(c.sO, 1)}${u}</b></div>
+          ${two ? `<div class="f">Pp = ${fmt(T)} ÷ (6 × ${fmt(c.sO, 1)}) = <b>${f2(c.pp)}</b></div>` : ''}
+          <div class="f">Ppk = ${kLine(c.sO)} = <b>${f2(c.ppk)}</b></div>
+          <div class="x">Compares every reading with the overall average (${fmtU(c.m)}), so everything that moved during the period is counted.</div>
+        </div>
+      </div>
+      <div class="calc-note">${gapTxt}${S.phi >= 0.3 ? ' <b>Linked readings are switched on:</b> neighbouring readings are close to each other, so σ within is underestimated. Cp looks better than it really is and the control limits are too tight.' : ''}</div>
+      ${c.cm && scen === 'machine' ? `<div class="cm-box"><b>Machine study (first 50 consecutive parts):</b> s = ${fmt(c.cm.s, 1)}${u}${c.cm.cm != null ? ` → Cm = ${fmt(T)} ÷ (6 × ${fmt(c.cm.s, 1)}) = <b>${f2(c.cm.cm)}</b>` : ''} · Cmk = <b>${f2(c.cm.cmk)}</b>. Same formula as Pp, but only on a short, clean run.</div>` : ''}
+      <table class="gap-table">
+        <tr><th>${nm[0]}</th><th>${nm[1]}</th><th>What it means</th><th>Where to act</th></tr>
+        ${row(true, true, 'Capable and steady over time', 'Keep it that way; monitor with the control chart.')}
+        ${row(true, false, 'The machine is fine; the process moves between checks', 'Setups, changeovers, material lots, offsets. Usually cheap.')}
+        ${row(false, false, 'The machine/process itself varies too much', 'Maintenance, fixtures, tooling, process change. Often needs money.')}
+        ${row(false, true, 'Unusual; usually a data problem', 'Check how checks are formed, linked readings or over-adjustment.')}
+      </table>`;
+  }
+
+  const RULE_TEXT = {
+    'x-high': { t: 'A point above the upper control limit', see: 'This check is higher than the process normally goes.', cause: 'Something changed suddenly: wrong setting or offset, a new material lot, a chipped or changed tool, a different operator or gauge.', act: 'Stop and check the last parts. Find what changed before adjusting anything.' },
+    'x-low': { t: 'A point below the lower control limit', see: 'This check is lower than the process normally goes.', cause: 'Something changed suddenly: wrong setting or offset, a new material lot, a chipped or changed tool, a different operator or gauge.', act: 'Stop and check the last parts. Find what changed before adjusting anything.' },
+    'd-high': { t: 'Spread suddenly increased', see: 'The variation within this check is larger than normal.', cause: 'Loose clamp or fixture, worn tool, mixed material, an unstable machine, or a measurement problem.', act: 'Check the fixture, tool and gauge. Do not just shift the setting; the spread is the problem.' },
+    'd-low': { t: 'Spread unusually small', see: 'The variation within this check is smaller than normal.', cause: 'Could be a real improvement, or a gauge that is not reading properly (stuck, poor resolution), or data being "adjusted".', act: 'Confirm the measurement. If the improvement is real, find out why and keep it.' },
+    'run-above': { t: '7 checks in a row above the centre line', see: 'No single point is extreme, but the average has moved up.', cause: 'A shift: new batch of material, a setup or offset change, a new tool, a change of shift.', act: 'Look at what changed around the start of the run.' },
+    'run-below': { t: '7 checks in a row below the centre line', see: 'No single point is extreme, but the average has moved down.', cause: 'A shift: new batch of material, a setup or offset change, a new tool, a change of shift.', act: 'Look at what changed around the start of the run.' },
+    'trend-up': { t: '7 checks in a row going up', see: 'The process is drifting steadily upward.', cause: 'Gradual change: tool wear, machine warming up, coolant concentration, a spring or fixture relaxing.', act: 'Find the drift source. Plan tool change or compensation before parts go out of spec.' },
+    'zoneA': { t: '2 of 3 checks beyond 2σ', see: 'Two of the last three points are in the outer third of the chart, on the same side.', cause: 'An early sign of a shift: setting change, new lot, tool change.', act: 'Watch the next checks closely and look for a recent change.' },
+    'zoneB': { t: '4 of 5 checks beyond 1σ', see: 'Four of the last five points are on the same side, away from the centre.', cause: 'An early sign of a smaller shift in the average.', act: 'Look for a recent change; confirm with the next few checks.' },
+    'hug': { t: '15 checks in a row close to the centre line', see: 'The points hug the centre: less variation than the limits expect.', cause: 'Usually a data issue: several streams (cavities, spindles) mixed inside each check, or limits out of date after an improvement.', act: 'Check how checks are formed. If the process really improved, recalculate the limits.' },
+    'mixture': { t: '8 checks in a row away from the centre (both sides)', see: 'The points avoid the middle and jump between high and low.', cause: 'Two different sources mixed: two machines, two cavities, two operators, or over-adjustment.', act: 'Split the data by source and chart each one separately.' },
+    'alternate': { t: '14 checks alternating up and down', see: 'A saw-tooth pattern: up, down, up, down.', cause: 'Over-adjustment (correcting after every check), or two alternating sources feeding one chart.', act: 'Stop adjusting a stable process; check whether two sources are being alternated.' },
+    'trend-down': { t: '7 checks in a row going down', see: 'The process is drifting steadily downward.', cause: 'Gradual change: tool wear, machine warming up, coolant concentration, a spring or fixture relaxing.', act: 'Find the drift source. Plan tool change or compensation before parts go out of spec.' },
+  };
+  function renderSignal() {
+    if (!limits) {
+      el.sigOut.className = 'signal empty';
+      el.sigOut.innerHTML = `Collecting the first ${BASELINE} checks to calculate control limits (${Math.min(subgroups.length, BASELINE)} of ${BASELINE}).<br><br>Control limits come from the process itself: where the ${S.n === 1 ? 'parts' : 'check averages'} normally fall when nothing has changed. They are not the spec limits.`;
+      return;
+    }
+    if (!lastSignal) {
+      el.sigOut.className = 'signal empty';
+      el.sigOut.innerHTML = 'No signals. The process is behaving the way it normally does: only common-cause variation.<br><br><b>Do not adjust</b> a stable process because one part looks high or low. Adjusting makes the variation worse.';
+      return;
+    }
+    const r = RULE_TEXT[lastSignal.rule];
+    const ago = subgroups.length - lastSignal.at;
+    if (ago >= BASELINE) {
+      el.sigOut.className = 'signal empty';
+      el.sigOut.innerHTML = `No signals in the last ${BASELINE} checks. The process is behaving the way it normally does.<br><br>The last signal ("${r.t.toLowerCase()}") was ${ago} checks ago. A stable process still gives an occasional false alarm; one isolated signal is worth a quick look, not a panic.`;
+      return;
+    }
+    el.sigOut.className = 'signal';
+    const tag = stability() === 'possible' ? '<span class="possible">Possible signal: check before acting</span>' : '';
+    el.sigOut.innerHTML = `<div class="sig-box">${tag}<h4>${r.t}</h4>
+      <div class="hint">${ago === 0 ? 'Latest check' : ago + ' check' + (ago > 1 ? 's' : '') + ' ago'}</div>
+      <p><span class="lbl">What you see:</span> ${r.see}</p>
+      <p><span class="lbl">Usual causes:</span> ${r.cause}</p>
+      <p><span class="lbl">What to do:</span> ${r.act}</p>
+      ${lastSignal.inSpec ? `<p class="note" style="background:var(--warning-bg);padding:6px 8px;border-radius:6px;">Every part in this check is still <b>inside the spec</b>. The parts are fine, but the process has changed. That is the point of a control chart: it warns you before parts go bad.</p>` : ''}
+    </div>`;
+  }
+
+  // ---------- Canvas helpers ----------
+  function fitCanvas(c) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = parseInt(c.getAttribute('height'), 10);
+    if (c._w !== w || c._dpr !== dpr) { c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px'; c._w = w; c._dpr = dpr; }
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h };
+  }
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  function nonNeg() { return S.type !== 'two' && S.C > 0 && (S.usl ?? S.lsl) > 0; }
+  function axisRange() {
+    let axMin = S.C - S.W, axMax = S.C + S.W;
+    if (nonNeg() && axMin < 0) { axMax -= axMin * 0.5; axMin = 0; }
+    return { axMin, axMax };
+  }
+  // ---------- Track view ----------
+  const car = { x: null, flash: 0 };
+  function drawTrack(dt) {
+    const { ctx, w, h } = fitCanvas(el.track);
+    ctx.clearRect(0, 0, w, h);
+    const padL = 14, padR = 14;
+    const { axMin, axMax } = axisRange();
+    const X = v => padL + (v - axMin) / (axMax - axMin) * (w - padL - padR);
+    const histTop = 48, histBot = 222, trackTop = 232, trackBot = 290, axisY = 300;
+    const accent = css('--accent'), overall = css('--overall'), crit = css('--critical');
+
+    // histogram data
+    const vals = subgroups.flatMap(g => g.vals).concat(current);
+    const nb = 48, bw = (axMax - axMin) / nb;
+    const counts = new Array(nb).fill(0), bad = new Array(nb).fill(0), recent = new Array(nb).fill(0);
+    const RECENT = 50, cut = vals.length > RECENT * 1.5 ? vals.length - RECENT : Infinity;
+    vals.forEach((v, j) => { let i = Math.floor((v - axMin) / bw); i = Math.max(0, Math.min(nb - 1, i)); counts[i]++; if (outSpec(v)) bad[i]++; else if (j >= cut) recent[i]++; });
+    const cap = capability();
+    let maxC = Math.max(1, ...counts);
+    const curveOn = S.showCurves && cap.ready;
+    if (curveOn) {
+      maxC = Math.max(maxC, vals.length * bw * pdf(cap.m, cap.m, cap.sW));
+    }
+    const binPx = (w - padL - padR) / nb;
+    const avail = histBot - histTop - 6;
+    let r = Math.min(binPx / 2 - 0.6, avail / (2 * maxC));
+    const dots = r >= 2.2;
+    const unitH = dots ? 2 * r : avail / maxC;
+
+    // sigma bands
+    const bandsEl = $('bandStats');
+    if (S.showBands && vals.length >= 10) {
+      const m = mean(vals), s = sd(vals);
+      const share = k => vals.filter(v => Math.abs(v - m) <= k * s).length / vals.length;
+      [[3, 0.05], [2, 0.08], [1, 0.12]].forEach(([k, a]) => {
+        ctx.fillStyle = `rgba(36,81,176,${a})`; ctx.fillRect(X(m - k * s), histTop - 14, X(m + k * s) - X(m - k * s), histBot - histTop + 14);
+      });
+      ctx.strokeStyle = 'rgba(36,81,176,0.45)'; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+      [-3, -2, -1, 1, 2, 3].forEach(k => { ctx.beginPath(); ctx.moveTo(X(m + k * s), histTop - 14); ctx.lineTo(X(m + k * s), histBot); ctx.stroke(); });
+      ctx.setLineDash([]);
+      ctx.font = '600 10.5px ' + css('--font'); ctx.fillStyle = accent; ctx.textAlign = 'center';
+      [-3, -2, -1, 1, 2, 3].forEach(k => ctx.fillText((k > 0 ? '+' : '−') + Math.abs(k) + 'σ', X(m + k * s), histTop - 3));
+      const html = [[1, 68.3], [2, 95.4], [3, 99.7]].map(([k, e]) => `<div>±${k}σ: expected <b>${e}%</b> · your parts <b>${(share(k) * 100).toFixed(k === 3 ? 1 : 0)}%</b></div>`).join('')
+        + `<div>σ ≈ <b>${fmt(s, 1)}${S.unit ? ' ' + esc(S.unit) : ''}</b> · spread 6σ ≈ <b>${fmt(6 * s)}</b></div>`;
+      if (bandsEl._h !== html) { bandsEl.innerHTML = html; bandsEl._h = html; }
+      bandsEl.hidden = false;
+    } else if (!bandsEl.hidden) bandsEl.hidden = true;
+
+    // histogram
+    for (let i = 0; i < nb; i++) {
+      const c = counts[i]; if (!c) continue;
+      const cx = X(axMin + (i + 0.5) * bw);
+      if (dots) {
+        for (let k = 0; k < c; k++) {
+          ctx.fillStyle = k < bad[i] ? crit : (cut === Infinity ? 'rgba(36,81,176,0.75)' : (k >= c - recent[i] ? 'rgba(36,81,176,0.95)' : 'rgba(36,81,176,0.28)'));
+          ctx.beginPath(); ctx.arc(cx, histBot - r - k * 2 * r, r - 0.4, 0, Math.PI * 2); ctx.fill();
+        }
+      } else {
+        const hh = c * unitH, hb = bad[i] * unitH;
+        ctx.fillStyle = cut === Infinity ? 'rgba(36,81,176,0.65)' : 'rgba(36,81,176,0.25)'; ctx.fillRect(cx - binPx / 2 + 0.5, histBot - hh, binPx - 1, hh);
+        if (recent[i] && cut !== Infinity) { const hr = recent[i] * unitH; ctx.fillStyle = 'rgba(36,81,176,0.9)'; ctx.fillRect(cx - binPx / 2 + 0.5, histBot - hh, binPx - 1, hr); }
+        if (hb) { ctx.fillStyle = crit; ctx.fillRect(cx - binPx / 2 + 0.5, histBot - hb, binPx - 1, hb); }
+      }
+    }
+
+    if (cut !== Infinity) {
+      ctx.font = '11px ' + css('--font'); ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(36,81,176,0.95)'; ctx.fillRect(w - padR - 168, histTop - 2, 9, 9);
+      ctx.fillStyle = 'rgba(36,81,176,0.28)'; ctx.fillRect(w - padR - 80, histTop - 2, 9, 9);
+      ctx.fillStyle = css('--text-2'); ctx.fillText('latest 50', w - padR - 96, histTop + 6); ctx.fillText('earlier', w - padR, histTop + 6);
+    }
+
+    // curves
+    if (curveOn) {
+      const drawCurve = (s, col, dash, lw) => {
+        ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash); ctx.beginPath();
+        for (let px = padL; px <= w - padR; px += 2) {
+          const v = axMin + (px - padL) / (w - padL - padR) * (axMax - axMin);
+          const y = histBot - vals.length * bw * pdf(v, cap.m, s) * unitH;
+          px === padL ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      };
+      drawCurve(cap.sO, overall, [], 2.2);
+      drawCurve(cap.sW, accent, [6, 4], 2.2);
+    }
+    ctx.strokeStyle = css('--border-strong'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL, histBot + 0.5); ctx.lineTo(w - padR, histBot + 0.5); ctx.stroke();
+
+    // track: grass, asphalt, kerbs
+    ctx.fillStyle = '#E4ECDF'; ctx.fillRect(padL, trackTop, w - padL - padR, trackBot - trackTop);
+    const a0 = S.lsl != null ? X(S.lsl) : padL, a1 = S.usl != null ? X(S.usl) : w - padR;
+    ctx.fillStyle = '#DADFE6'; ctx.fillRect(a0, trackTop, a1 - a0, trackBot - trackTop);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([10, 8]);
+    ctx.beginPath(); ctx.moveTo(padL, (trackTop + trackBot) / 2); ctx.lineTo(w - padR, (trackTop + trackBot) / 2); ctx.stroke(); ctx.setLineDash([]);
+    const kerb = (x, side) => {
+      const kw = 7, x0 = side < 0 ? x - kw : x;
+      for (let y = trackTop, k = 0; y < trackBot; y += 7, k++) { ctx.fillStyle = k % 2 ? '#fff' : crit; ctx.fillRect(x0, y, kw, Math.min(7, trackBot - y)); }
+    };
+    if (S.lsl != null) kerb(X(S.lsl), -1);
+    if (S.usl != null) kerb(X(S.usl), 1);
+
+    // spec lines + labels
+    ctx.font = '600 11px ' + css('--font');
+    const specLine = (v, label, align) => {
+      ctx.strokeStyle = crit; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(X(v), 18); ctx.lineTo(X(v), trackBot); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = crit; ctx.textAlign = align; ctx.fillText(`${label} ${fmt(v)}`, X(v) + (align === 'left' ? 4 : -4), 14);
+    };
+    if (S.lsl != null) specLine(S.lsl, 'LSL', 'right');
+    if (S.usl != null) specLine(S.usl, 'USL', 'left');
+    ctx.strokeStyle = css('--muted'); ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(S.target), 18); ctx.lineTo(X(S.target), histBot); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.font = '10.5px ' + css('--font');
+    ctx.fillText(S.type === 'two' ? 'nominal' : 'typical', X(S.target), 14);
+
+    // axis
+    ctx.fillStyle = css('--text-2'); ctx.font = '11px ' + css('--mono'); ctx.textAlign = 'center';
+    const nt = w < 600 ? 4 : 8;
+    for (let i = 0; i <= nt; i++) {
+      const v = axMin + i * (axMax - axMin) / nt; const x = X(v);
+      ctx.fillRect(x, trackBot, 1, 4);
+      ctx.textAlign = i === 0 ? 'left' : i === nt ? 'right' : 'center';
+      ctx.fillText(fmt(v), x, axisY + 12);
+    }
+    ctx.textAlign = 'right'; ctx.font = '11px ' + css('--font');
+    ctx.fillText(`${S.part}${S.unit ? ' (' + S.unit + ')' : ''}`, w - padR, axisY + 27);
+
+    // car
+    if (lastPart != null) {
+      const tx = Math.max(padL + 10, Math.min(w - padR - 10, X(lastPart)));
+      if (car.x == null || S.speed === 'turbo') car.x = tx; else car.x += (tx - car.x) * Math.min(1, dt * 14);
+      const off = outSpec(lastPart);
+      const cy = (trackTop + trackBot) / 2;
+      const shake = car.flash > 0 && off ? Math.sin(performance.now() / 25) * 2 : 0;
+      drawCar(ctx, car.x + shake, cy, off ? crit : accent);
+      // value tag
+      const label = fmtU(lastPart);
+      ctx.font = '600 11.5px ' + css('--mono');
+      const tw = ctx.measureText(label).width + 12;
+      let lx = car.x + 16; if (lx + tw > w - padR) lx = car.x - 16 - tw;
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'; rr(ctx, lx, cy - 10, tw, 20, 5); ctx.fill();
+      ctx.strokeStyle = off ? crit : css('--border-strong'); ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = off ? crit : css('--text'); ctx.textAlign = 'left'; ctx.fillText(label, lx + 6, cy + 4);
+    } else {
+      ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.font = '12px ' + css('--font');
+      ctx.fillText('Press play: each part measured drives the car to its value', w / 2, (trackTop + trackBot) / 2 + 4);
+    }
+    if (car.flash > 0 && lastPart != null && outSpec(lastPart)) {
+      car.flash -= dt;
+      ctx.globalAlpha = Math.max(0, car.flash) * 0.35; ctx.fillStyle = crit; ctx.fillRect(padL, trackTop, w - padL - padR, trackBot - trackTop); ctx.globalAlpha = 1;
+      ctx.fillStyle = crit; ctx.font = '700 12px ' + css('--font'); ctx.textAlign = 'center';
+      ctx.fillText('OFF TRACK: out of spec', w / 2, trackTop - 3);
+    }
+    // legend for curves
+    if (curveOn) {
+      ctx.textAlign = 'left'; ctx.font = '11px ' + css('--font');
+      const ly = histBot - 30, lx = padL + 4;
+      ctx.strokeStyle = accent; ctx.lineWidth = 2.2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 24, ly); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = css('--text-2'); ctx.fillText('within: what the machine can do (Cp, Cpk)', lx + 30, ly + 4);
+      ctx.strokeStyle = overall; ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 24, ly + 16); ctx.stroke();
+      ctx.fillText('overall: what the customer got (Pp, Ppk)', lx + 30, ly + 20);
+    }
+  }
+  function drawCar(ctx, x, y, color) {
+    ctx.save(); ctx.translate(x, y);
+    const L = 34, Wd = 18;
+    ctx.fillStyle = '#1F2937';
+    [[-Wd / 2 - 3, -L / 2 + 5], [Wd / 2 - 1, -L / 2 + 5], [-Wd / 2 - 3, L / 2 - 12], [Wd / 2 - 1, L / 2 - 12]].forEach(([wx, wy]) => { rr(ctx, wx, wy, 4, 8, 1.5); ctx.fill(); });
+    ctx.fillStyle = color; rr(ctx, -Wd / 2, -L / 2, Wd, L, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; rr(ctx, -Wd / 2 + 3, -L / 2 + 8, Wd - 6, 6, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillRect(-1.5, -L / 2 + 16, 3, L / 2 - 2);
+    ctx.restore();
+  }
+
+  // ---------- Control chart ----------
+  function drawChart() {
+    const { ctx, w, h } = fitCanvas(el.chart);
+    ctx.clearRect(0, 0, w, h);
+    const show = subgroups.slice(-40);
+    const firstIdx = subgroups.length - show.length;
+    const xName = S.n === 1 ? 'Individuals (I) chart: each part' : `X̄ chart: average of each check of ${S.n} parts`;
+    const dName = S.n === 1 ? 'Moving range (MR) chart: change from the previous part' : (S.disp === 'R' ? 'R chart: range (max − min) within each check' : 'S chart: standard deviation within each check');
+    el.chartHead.textContent = S.n === 1 ? 'Control chart: I-MR' : `Control chart: X̄–${S.disp}`;
+    el.chartHint.textContent = (S.shift > 0 ? 'Shaded columns = batches. ' : '') + 'Red points = signals. Spec limits are NOT drawn here on purpose: control limits come from the process, spec limits from the drawing.';
+    const panels = [
+      { top: 8, bot: 200, vals: show.map(g => g.x), name: xName, cl: limits?.cl, ucl: limits?.ucl, lcl: limits?.lcl, flag: g => g.rules.some(r => !r.startsWith('d-')) },
+      { top: 228, bot: 352, vals: show.map(g => dispVal(g)), name: dName, cl: limits?.dcl, ucl: limits?.ducl, lcl: limits?.dlcl, flag: g => g.rules.some(r => r.startsWith('d-')) },
+    ];
+    const padL = 10, padR = 92;
+    const plotW = w - padL - padR;
+    const X = i => padL + (i + 0.5) * plotW / 40;
+    panels.forEach((P, pi) => {
+      ctx.fillStyle = css('--text-2'); ctx.font = '600 11.5px ' + css('--font'); ctx.textAlign = 'left';
+      ctx.fillText(P.name, padL, P.top + 10);
+      const top = P.top + 18, bot = P.bot;
+      const vs = P.vals.filter(v => v != null);
+      let lo = Math.min(...vs, P.lcl ?? Infinity, P.ucl ?? Infinity), hi = Math.max(...vs, P.ucl ?? -Infinity, P.lcl ?? -Infinity);
+      if (!vs.length) { lo = 0; hi = 1; }
+      if (hi - lo < 1e-12) { hi += S.W / 20; lo -= S.W / 20; }
+      const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+      if (pi === 1) lo = Math.min(lo, 0) < 0 ? Math.max(lo, -pad) : lo;
+      const Y = v => bot - (v - lo) / (hi - lo) * (bot - top);
+      // frame + batch shading
+      ctx.fillStyle = css('--panel-2'); ctx.fillRect(padL, top, plotW, bot - top);
+      if (S.shift > 0) show.forEach((g, i) => { if (g.batch % 2 === 0) { ctx.fillStyle = 'rgba(194,65,12,0.06)'; ctx.fillRect(padL + i * plotW / 40, top, plotW / 40, bot - top); } });
+      // limits
+      const line = (v, col, dash, label) => {
+        if (v == null || !isFinite(v)) return;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash(dash);
+        ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(padL + plotW, Y(v)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = col; ctx.font = '11px ' + css('--mono'); ctx.textAlign = 'left';
+        ctx.fillText(`${label} ${fmt(v, 1)}`, padL + plotW + 6, Y(v) + 4);
+      };
+      if (limits && pi === 0 && S.ruleSet === 'all') {
+        const sx = (limits.ucl - limits.cl) / 3;
+        ctx.strokeStyle = 'rgba(124,134,148,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+        [-2, -1, 1, 2].forEach(k => { const y = Y(limits.cl + k * sx); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke(); });
+        ctx.setLineDash([]);
+        ctx.fillStyle = css('--muted'); ctx.font = '10px ' + css('--mono'); ctx.textAlign = 'left';
+        [-2, -1, 1, 2].forEach(k => ctx.fillText((k > 0 ? '+' : '−') + Math.abs(k) + 'σ', padL + plotW + 6, Y(limits.cl + k * sx) + 3));
+      }
+      if (limits) {
+        line(P.ucl, css('--critical'), [5, 4], 'UCL');
+        if (!(pi === 1 && P.lcl === 0)) line(P.lcl, css('--critical'), [5, 4], 'LCL');
+        line(P.cl, css('--text-2'), [], 'CL');
+      } else if (pi === 0) {
+        ctx.fillStyle = css('--muted'); ctx.font = '12px ' + css('--font'); ctx.textAlign = 'center';
+        ctx.fillText(`Collecting data for control limits: ${Math.min(subgroups.length, BASELINE)} of ${BASELINE} checks`, padL + plotW / 2, (top + bot) / 2);
+      }
+      // series
+      ctx.strokeStyle = 'rgba(36,81,176,0.55)'; ctx.lineWidth = 1.4; ctx.beginPath();
+      let started = false;
+      P.vals.forEach((v, i) => { if (v == null) { started = false; return; } started ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)); started = true; });
+      ctx.stroke();
+      show.forEach((g, i) => {
+        const v = P.vals[i]; if (v == null) return;
+        const f = P.flag(g);
+        ctx.fillStyle = f ? css('--critical') : css('--accent');
+        ctx.beginPath(); ctx.arc(X(i), Y(v), f ? 4.5 : 3.2, 0, Math.PI * 2); ctx.fill();
+        if (f) { ctx.strokeStyle = css('--critical'); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(X(i), Y(v), 7.5, 0, Math.PI * 2); ctx.stroke(); }
+      });
+    });
+    // x labels
+    ctx.fillStyle = css('--muted'); ctx.font = '10.5px ' + css('--mono'); ctx.textAlign = 'center';
+    show.forEach((g, i) => { const k = firstIdx + i + 1; if (k % 5 === 0) ctx.fillText(k, X(i), 214); });
+  }
+
+  // ---------- Learn mode ----------
+  function ctxVals() {
+    const c = capability();
+    const vals = subgroups.flatMap(g => g.vals);
+    const s = vals.length >= 10 ? sd(vals) : null;
+    const m = vals.length >= 10 ? mean(vals) : null;
+    const u = S.unit ? ' ' + esc(S.unit) : '';
+    const N = v => `<span class="num">${v}</span>`;
+    let near = null;
+    if (m != null) {
+      const du = S.usl != null ? S.usl - m : Infinity, dl = S.lsl != null ? m - S.lsl : Infinity;
+      near = du <= dl ? { name: 'upper limit', gap: du } : { name: 'lower limit', gap: dl };
+    }
+    return { c, s, m, u, N, near, P: esc(S.part), Pl: esc(S.part.charAt(0).toLowerCase() + S.part.slice(1)), one: S.type !== 'two' };
+  }
+  const STEPS = [
+    {
+      title: 'Variation: no two parts are the same',
+      apply() { setProcess({ cp: 1.33, off: 0, shift: 0, n: 1 }); setSpeed('medium'); setView(false, false); },
+      pulse: 'f-sigma',
+      body(v) {
+        return `<p><span class="tag">Your part:</span> Every ${v.Pl} you measure lands at a slightly different value, even when nothing has changed. Each dot above the track is one part. Watch them pile up: most land near the middle, fewer towards the edges. That hill is your process's natural variation.</p>
+        <p><span class="tag">Try this:</span> Let 50 or so parts drop. Then drag <b>Part-to-part spread</b> and Restart run: watch the hill get wider or narrower.</p>
+        <p class="analogy">Think of it like your signature: never exactly the same twice, but always recognisably yours.</p>`;
+      },
+    },
+    {
+      title: 'Sigma (σ): how spread out the parts are',
+      apply() { setProcess({ cp: 1.33, off: 0, shift: 0, n: 1 }); setSpeed('fast'); setView(false, true); },
+      pulse: 'f-sigma',
+      body(v) {
+        const s = v.s != null ? v.N(fmt(v.s, 1) + v.u) : '…';
+        const six = v.s != null ? v.N(fmt(6 * v.s) + v.u) : '…';
+        return `<p><span class="tag">Your part:</span> σ (sigma) is the typical distance of a ${v.Pl} from the average. Right now σ ≈ ${s}. The shaded bands show the rule that holds for most processes: about <b>68%</b> of parts fall within ±1σ, <b>95%</b> within ±2σ and <b>99.7%</b> within ±3σ (compare with your actual parts under the chart). So the <b>process spread</b>, where almost every part lands, is 6σ ≈ ${six}.</p>
+        <p><span class="tag">Try this:</span> Change the spread and Restart run. The width in ${esc(S.unit) || 'units'} changes, but the 68% / 95% / 99.7% stay about the same.</p>
+        <p class="note"><b>Process sigma vs sigma level:</b> process sigma (σ) is a measurement in ${esc(S.unit) || 'your unit'}. "Sigma level" (as in Six Sigma) is something else: how many σ fit between the average and the nearest spec limit. People mix these up all the time.</p>
+        <p class="analogy">Think of it like darts around a bullseye: σ is how wide the scatter is.</p>`;
+      },
+    },
+    {
+      title: 'Cp: does the spread fit inside the tolerance?',
+      apply() { setProcess({ cp: 1.0, off: 0, shift: 0, n: 1 }); setSpeed('fast'); setView(false, false); },
+      pulse: 'f-sigma',
+      body(v) {
+        if (v.one) return `<p><span class="tag">Your part:</span> Your ${v.Pl} has only one limit, so there is no tolerance width and <b>no Cp</b>. That's normal for things like roughness (only a maximum) or pull force (only a minimum). Go to the next step: Cpk works with one limit.</p>`;
+        const cp = v.c.ready ? v.N(f2(v.c.cp)) : '…';
+        const six = v.c.ready ? v.N(fmt(6 * v.c.sW) + v.u) : '…';
+        return `<p><span class="tag">Your part:</span> Your tolerance is ${v.N(fmt(S.W) + v.u)} wide (${fmt(S.lsl)} to ${fmt(S.usl)}). Your process spread (6σ) is ${six}. <b>Cp = tolerance ÷ spread = ${cp}</b>.</p>
+        <p>Cp 1.0 means the spread exactly fills the tolerance: no room for error. Cp 2.0 means the spread is only half the tolerance. Cp only looks at <i>size</i>, not at where the parts are centred.</p>
+        <p><span class="tag">Try this:</span> Drag <b>Part-to-part spread</b> down until Cp passes 1.33, the minimum most customers ask for.</p>
+        <p class="analogy">Think of it like: how many cars fit side by side across the road.</p>`;
+      },
+    },
+    {
+      title: 'Cpk: is the process centred?',
+      apply() { setProcess({ cp: 1.67, off: 0.55, shift: 0, n: 1 }); setSpeed('fast'); setView(false, false); },
+      pulse: 'f-mean',
+      body(v) {
+        const c = v.c;
+        const avg = v.m != null ? v.N(fmt(v.m) + v.u) : '…';
+        const gap = v.near ? v.N(fmt(v.near.gap) + v.u) : '…';
+        const cpPart = v.one ? '' : `The spread hasn't changed, so Cp is still ${c.ready ? v.N(f2(c.cp)) : '…'}. `;
+        return `<p><span class="tag">Your part:</span> ${cpPart}${v.one ? 'Your' : 'But your'} average ${v.Pl} is ${avg}, only ${gap} from the ${v.near ? v.near.name : 'limit'}. <b>Cpk measures the distance from the average to the nearest limit</b>: Cpk = ${c.ready ? v.N(f2(c.cpk)) : '…'}. Expect ${c.ready ? '<b>' + oneIn(c.ootW) + '</b>' : '…'} parts out of tolerance.</p>
+        <p><span class="tag">Try this:</span> Drag <b>Process average</b> back to the ${S.type === 'two' ? 'nominal' : 'typical value'} and watch Cpk climb${v.one ? '' : ' up to Cp'}.</p>
+        <p class="analogy">Think of it like: a narrow car hugging the kerb still goes off the road.</p>`;
+      },
+    },
+    {
+      title: 'Control limits are not spec limits',
+      apply() { setProcess({ cp: 1.67, off: 0, shift: 0, n: 5 }); setSpeed('fast'); setView(false, false); },
+      pulse: 'f-mean',
+      body(v) {
+        const lims = S.type === 'two' ? `${fmt(S.lsl)} – ${fmt(S.usl)}${v.u}` : (S.usl != null ? `max ${fmt(S.usl)}${v.u}` : `min ${fmt(S.lsl)}${v.u}`);
+        return `<p><span class="tag">Your part:</span> Now each check measures 5 consecutive ${v.Pl} parts and plots their average (X̄ chart).</p>
+        <p><b>Spec limits</b> (${lims}) come from the drawing: what the customer accepts. <b>Control limits</b> come from the process itself: where the averages normally fall when nothing has changed. A point can be <b>inside spec but outside control limits</b>. Every part is still good, but something in the process has changed.</p>
+        <p><span class="tag">Try this:</span> Wait until the control chart shows its limits (25 checks). Then nudge <b>Process average</b> a little and watch for red points. Check the histogram: the parts are still inside spec.</p>
+        <p class="analogy">Think of it like: spec limits are the edge of the road; control limits are your normal lane.</p>`;
+      },
+    },
+    {
+      title: 'Cp vs Pp: same data, two ways to calculate σ',
+      apply() { setProcess({ cp: 1.67, off: 0, shift: 0.1, n: 5 }); setSpeed('fast'); setView(true, false); },
+      pulse: 'f-shift',
+      body(v) {
+        const c = v.c;
+        const pair = v.one ? `Cpk ${c.ready ? v.N(f2(c.cpk)) : '…'} vs Ppk ${c.ready ? v.N(f2(c.ppk)) : '…'}` : `Cp ${c.ready ? v.N(f2(c.cp)) : '…'} vs Pp ${c.ready ? v.N(f2(c.pp)) : '…'}`;
+        return `<p><span class="tag">The common mix-up:</span> people think Cp needs short-term data and Pp needs long-term data. No: <b>both use the same data</b>, collected over time. Only the way σ is calculated differs.</p>
+        <p>Example: 3 parts measured every hour, tolerance 10.00 ± 0.10.</p>
+        <table class="gap-table" style="max-width:560px;">
+          <tr><th>Hour</th><th>Parts</th><th>Range in the hour</th></tr>
+          <tr><td>1</td><td>10.00, 10.02, 10.01</td><td>0.02</td></tr>
+          <tr><td>2</td><td>10.05, 10.07, 10.06</td><td>0.02</td></tr>
+          <tr><td>3</td><td>9.97, 9.99, 9.98</td><td>0.02</td></tr>
+        </table>
+        <p><b>σ within</b> compares parts only with others from the same hour: R̄ ÷ d2 = 0.02 ÷ 1.693 = 0.012, so <b>Cp = 2.8</b>. It never sees that hour 2 sits higher than hour 3.<br>
+        <b>σ overall</b> puts all 9 parts in one bin: std dev = 0.036, so <b>Pp = 0.92</b>. The hour-to-hour jumps are counted.</p>
+        <p><span class="tag">Your part right now:</span> ${pair}, from the same ${c.ready ? c.total : '…'} readings. Open <b>"How was this calculated?"</b> under the results to see both calculations step by step. Blue dashed curve = σ within; orange curve = σ overall.</p>
+        <p><span class="tag">Try this:</span> Set <b>Batch-to-batch shift</b> to 0 and Restart run: Cp ≈ Pp. When Cp is high but Pp is low, the machine is fine and the fix is controlling setups and changeovers.</p>
+        <p class="analogy">Workshop line: "Pp tells you how bad it is. Cp tells you whether the machine is to blame."</p>`;
+      },
+    },
+    {
+      title: 'Your turn: is this process capable?',
+      apply() {
+        const cps = [0.8, 1.1, 1.5, 2.0];
+        setProcess({ cp: cps[Math.floor(Math.random() * cps.length)], off: (Math.random() - 0.5) * 0.7, shift: Math.random() < 0.5 ? 0 : 0.07, n: 5 });
+        guess = null; setSpeed('fast'); setView(false, false);
+      },
+      pulse: null,
+      lock: true,
+      body(v) {
+        const c = v.c;
+        if (!guess) {
+          const enough = subgroups.length >= 30;
+          return `<p>A new process is running and its settings are hidden. Watch the histogram and the control chart, then make your call: will the customer be happy with these ${v.Pl} parts?</p>
+          ${enough ? '' : `<p class="note">Wait for at least 30 checks (${subgroups.length} so far).</p>`}
+          <div class="guess">
+            <button class="btn" data-guess="cap" ${enough ? '' : 'disabled'}>Capable</button>
+            <button class="btn" data-guess="mar" ${enough ? '' : 'disabled'}>Marginal</button>
+            <button class="btn" data-guess="not" ${enough ? '' : 'disabled'}>Not capable</button>
+          </div>`;
+        }
+        const truth = c.ppk >= 1.33 ? 'cap' : c.ppk >= 1.0 ? 'mar' : 'not';
+        const names = { cap: 'Capable', mar: 'Marginal', not: 'Not capable' };
+        const ok = truth === guess;
+        const why = [];
+        if (c.cp != null && c.cpk < 0.8 * c.cp) why.push('the average was off-centre (Cpk well below Cp)');
+        if (c.cpk != null && c.ppk < 0.85 * c.cpk) why.push('batch-to-batch shifts widened the overall spread (Ppk below Cpk)');
+        if (c.cp != null && c.cp < 1) why.push('the spread itself was wider than the tolerance');
+        return `<div class="reveal ${ok ? 'v-good' : 'v-warn'}"><b>${ok ? 'Correct.' : 'Not quite.'}</b> You said <b>${names[guess]}</b>. Ppk (what the customer gets) is <span class="num">${f2(c.ppk)}</span>, which is <b>${names[truth]}</b>.${why.length ? ' Here, ' + why.join(', and ') + '.' : ''}</div>
+        <div class="guess"><button class="btn primary" data-again="1">Try another process</button></div>`;
+      },
+    },
+  ];
+  function setSpeed(s) { S.speed = s; setSeg(el.speedSeg, s); }
+  function setView(curves, bands) { S.showCurves = curves; S.showBands = bands; el.tCurves.checked = curves; el.tBands.checked = bands; dirty = true; }
+  function enterStep(i) {
+    learnStep = i;
+    el.learn.hidden = false;
+    const st = STEPS[i];
+    setScenario(null); S.phi = 0; syncPhi(); st.apply(); resetRun(); S.running = true; el.playBtn.textContent = 'Pause';
+    document.querySelectorAll('.pulse').forEach(n => n.classList.remove('pulse'));
+    if (st.pulse) $(st.pulse).classList.add('pulse');
+    el.learnNo.textContent = `Step ${i + 1} of ${STEPS.length}`;
+    el.learnTitle.textContent = st.title;
+    el.learnBack.disabled = i === 0;
+    el.learnNext.textContent = i === STEPS.length - 1 ? 'Finish' : 'Next';
+    el.learnDots.innerHTML = STEPS.map((_, k) => `<span class="${k === i ? 'on' : ''}" data-k="${k}" title="Step ${k + 1}"></span>`).join('');
+    updateLocks();
+    renderLearn(true);
+  }
+  function exitLearn() {
+    learnStep = -1; el.learn.hidden = true; guess = null;
+    document.querySelectorAll('.pulse').forEach(n => n.classList.remove('pulse'));
+    updateLocks(); syncControls();
+  }
+  function updateLocks() {
+    const lock = learnStep >= 0 && STEPS[learnStep].lock;
+    el.procCard.classList.toggle('locked', !!lock);
+    el.capCard.classList.toggle('locked', !!(lock && !guess));
+  }
+  let lastLearnHtml = '';
+  function renderLearn(force) {
+    if (learnStep < 0) return;
+    const html = STEPS[learnStep].body(ctxVals());
+    if (force || html !== lastLearnHtml) { el.learnBody.innerHTML = html; lastLearnHtml = html; }
+  }
+  el.learnBody.addEventListener('click', e => {
+    const g = e.target.closest('[data-guess]');
+    if (g) { guess = g.dataset.guess; updateLocks(); renderLearn(true); return; }
+    if (e.target.closest('[data-again]')) enterStep(learnStep);
+  });
+  $('learnStart').addEventListener('click', () => enterStep(0));
+  $('freePlay').addEventListener('click', exitLearn);
+  el.learnExit.addEventListener('click', exitLearn);
+  el.learnBack.addEventListener('click', () => { if (learnStep > 0) enterStep(learnStep - 1); });
+  el.learnNext.addEventListener('click', () => { if (learnStep < STEPS.length - 1) enterStep(learnStep + 1); else exitLearn(); });
+  el.learnDots.addEventListener('click', e => { const d = e.target.closest('[data-k]'); if (d) enterStep(parseInt(d.dataset.k, 10)); });
+
+  // ---------- Run controls ----------
+  el.playBtn.addEventListener('click', () => { S.running = !S.running; el.playBtn.textContent = S.running ? 'Pause' : 'Play'; });
+  el.stepBtn.addEventListener('click', () => { nextPart(); });
+  el.speedSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSpeed(b.dataset.v); });
+  el.resetBtn.addEventListener('click', () => {
+    if (scen && SCEN[scen].kind === 'event') { setProcess(Object.assign({ cp: 1.33, off: 0, shift: 0 }, SCEN[scen].start)); stepDone = false; lastAdj = null; evBase = S.mean; }
+    resetRun(); if (learnStep >= 0) renderLearn(true);
+  });
+  el.recalcBtn.addEventListener('click', () => {
+    if (subgroups.length < BASELINE) return;
+    computeLimits(subgroups.slice(-BASELINE));
+    reevaluate();
+  });
+  $('ruleSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.ruleSet = b.dataset.v; setSeg($('ruleSeg'), S.ruleSet); reevaluate(); });
+  function syncPhi() { $('phiSl').value = S.phi; $('phiNum').value = S.phi.toFixed(2); }
+  $('phiSl').addEventListener('input', () => { S.phi = parseFloat($('phiSl').value); syncPhi(); resetRun(); });
+  $('phiNum').addEventListener('change', () => { let v = parseFloat($('phiNum').value); if (!isFinite(v)) v = 0; S.phi = Math.min(0.95, Math.max(0, v)); syncPhi(); resetRun(); });
+  el.tCurves.addEventListener('change', () => { S.showCurves = el.tCurves.checked; });
+  el.tBands.addEventListener('change', () => { S.showBands = el.tBands.checked; });
+
+  // ---------- Main loop ----------
+  let acc = 0, prevT = performance.now();
+  function frame(t) {
+    const dt = Math.min(0.1, (t - prevT) / 1000); prevT = t;
+    if (S.running && S.W > 0) {
+      acc += dt; const iv = SPEEDS[S.speed]; let k = 0;
+      while (acc >= iv && k < 60) { acc -= iv; nextPart(); k++; }
+      if (k === 60) acc = 0;
+    }
+    if (dirty) {
+      el.cParts.textContent = partCount; el.cOff.textContent = offCount; el.cSig.textContent = sigCount;
+      if (scen && SCEN[scen].kind === 'event') { el.meanSl.value = S.mean; el.meanNum.value = S.mean.toFixed(S.dec + 1); }
+      if (scen) renderGuide();
+      renderCap(capability()); renderSignal(); drawChart(); renderLearn();
+      dirty = false;
+    }
+    drawTrack(dt);
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', () => { dirty = true; });
+
+  // ---------- Init ----------
+  setSpeed('medium');
+  setSeg($('ruleSeg'), S.ruleSet); syncPhi();
+  loadPreset('crimp');
+  requestAnimationFrame(frame);
+  window.__spc = { S, capability, get subgroups() { return subgroups; }, get limits() { return limits; }, nextPart, enterStep, setProcess, resetRun };
+})();
+</script>
+<footer class="k-foot">
+  <span>SPC Simulator by <a href="https://kattamaipu.com/">The Kattamaipu Company</a>. Free for learning and in-company training, with credit. Not for resale. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license noopener">CC BY-NC-SA 4.0</a>.</span>
+  <span><a href="https://github.com/kattamaipu/spc-simulator" rel="noopener">Source on GitHub</a> · <a href="https://kattamaipu.com/training/spc/">Learn SPC properly with your team</a></span>
+</footer>
+</body>
+</html>

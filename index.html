@@ -28,6 +28,7 @@
     --accent: #15603E;
     --accent-soft: rgba(21,96,62,0.10);
     --overall: #C2410C;
+    --shape: #6D28D9;
     --good: #1a7f37;
     --warning: #9a6700;
     --critical: #cf222e;
@@ -225,6 +226,7 @@
   footer { margin-top: 18px; font-size: 11.5px; color: var(--muted); }
   details.help summary { cursor: pointer; font-size: 12px; color: var(--accent); margin-top: 8px; }
   details.help div { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+  .zero-note, .oot > .zero-note { display: block; margin: 6px 0 2px; padding: 6px 8px; border-radius: 6px; background: var(--warning-bg); color: var(--text); font-size: 12.5px; line-height: 1.45; }
 </style>
 </head>
 <body>
@@ -324,6 +326,14 @@
             <button data-v="R">Range (R)</button>
             <button data-v="S">Std dev (S)</button>
           </div>
+        </div>
+        <div class="field" id="f-shape" hidden>
+          <div class="field-head"><span class="name">Data shape<span class="tech">distribution</span></span></div>
+          <div class="seg" id="shapeSeg">
+            <button data-v="normal">Bell-shaped</button>
+            <button data-v="skewed">Skewed (long tail)</button>
+          </div>
+          <div class="hint">One-sided characteristics with a natural floor at zero (roughness, flatness, straightness, impurities, runout) usually bunch up low with a long tail towards the limit. On the floor the data tells you the shape; this knob sets what the simulated process does.</div>
         </div>
         <details class="help" id="linkBox">
           <summary>Continuous processes: linked readings</summary>
@@ -508,6 +518,9 @@
     }
   })();
   const BASELINE = 25;      // checks used to set control limits
+  const MIN_READINGS = 100; // capability verdict needs >= 25 checks AND >= 100 readings (AIAG guideline)
+  const GAP = 3;           // clean checks allowed inside one signal episode
+  const FA_EVERY = { basic: 25, all: 18 }; // isolated false alarms tolerated: one per this many checks (calibrated by simulating stable runs)
   const RUN = 7;            // AIAG run / trend length
   const MAX_SG = 300;       // checks kept in memory
   const SPEEDS = { slow: 1.0, medium: 0.4, fast: 0.12, turbo: 0.015 };
@@ -518,7 +531,7 @@
     // group, label, part, unit, type, spec, recommended n / chart, why
     shaft:   { g: 'Machining (CNC turning / milling)', label: 'Turned shaft OD, Ø20 h6 (0 / −0.013 mm)', part: 'Shaft outer diameter', unit: 'mm', type: 'two', nominal: 20, plus: 0, minus: 0.013, n: 5, why: 'Consecutive parts off one spindle, quick to measure with a micrometer.' },
     bore:    { g: 'Machining (CNC turning / milling)', label: 'Bore, Ø25 H7 (+0.021 / 0 mm)', part: 'Bore diameter', unit: 'mm', type: 'two', nominal: 25, plus: 0.021, minus: 0, n: 5, why: 'Consecutive parts, quick to measure with a bore gauge.' },
-    ra:      { g: 'Machining (CNC turning / milling)', label: 'Ground surface roughness Ra (max 0.8 µm)', part: 'Surface roughness Ra', unit: 'µm', type: 'upper', limit: 0.8, typical: 0.4, n: 1, why: W1 + ': each roughness trace takes time, so one reading per check. Upper limit only, so no Cp/Pp.' },
+    ra:      { g: 'Machining (CNC turning / milling)', label: 'Ground surface roughness Ra (max 0.8 µm)', part: 'Surface roughness Ra', unit: 'µm', type: 'upper', limit: 0.8, typical: 0.33, n: 1, why: W1 + ': each roughness trace takes time, so one reading per check. Upper limit only, so no Cp/Pp. Roughness data is usually skewed (it cannot go below zero and has a long tail upwards), so Data shape is set to skewed: compare the normal and fitted-shape results under Capability.', shape: 'skewed' },
     flange:  { g: 'Sheet metal stamping / pressing', label: 'Flange height (15 ± 0.2 mm)', part: 'Flange height', unit: 'mm', type: 'two', nominal: 15, plus: 0.2, minus: 0.2, n: 5, why: 'Consecutive strokes from one die, quick to check on a height gauge.' },
     pierce:  { g: 'Sheet metal stamping / pressing', label: 'Pierced hole diameter (Ø8 +0.10 / 0 mm)', part: 'Pierced hole diameter', unit: 'mm', type: 'two', nominal: 8, plus: 0.1, minus: 0, n: 5, why: 'Consecutive strokes, measured with a pin gauge set or calliper. Unequal tolerance example.' },
     shotwt:  { g: 'Injection moulding', label: 'Part weight (12.50 ± 0.15 g)', part: 'Part weight', unit: 'g', type: 'two', nominal: 12.5, plus: 0.15, minus: 0.15, n: 5, why: 'Consecutive shots from ONE cavity per subgroup. Never mix cavities in a subgroup; chart each cavity separately.' },
@@ -536,16 +549,20 @@
     hose:    { g: 'Rubber / plastic extrusion', label: 'Hose outer diameter (16.0 ± 0.3 mm)', part: 'Hose outer diameter', unit: 'mm', type: 'two', nominal: 16, plus: 0.3, minus: 0.3, n: 5, why: 'Readings taken a short interval apart along the line.' },
     ph:      { g: 'Process chemistry / heat treatment', label: 'Wash bath pH (6.5–7.5)', part: 'Bath pH', unit: 'pH', type: 'two', nominal: 7.0, plus: 0.5, minus: 0.5, n: 1, why: W1 + ': one sample per check from a well-mixed bath. Several samples at the same moment would be nearly identical.' },
     cchem:   { g: 'Steel: iron & steel making', label: 'Carbon content per heat (0.18–0.22 %)', part: 'Carbon content', unit: '%', type: 'two', nominal: 0.20, plus: 0.02, minus: 0.02, n: 1, why: W1 + ': one spectrometer result per heat. Every tonne in the heat has the same chemistry.' },
+    sulphur: { g: 'Steel: iron & steel making', label: 'Sulphur content per heat (max 0.040 %)', part: 'Sulphur content', unit: '%', type: 'upper', limit: 0.040, typical: 0.017, n: 1, shape: 'skewed', why: W1 + ': one spectrometer result per heat. Upper limit only, so no Cp/Pp. Impurities near zero are usually skewed (most heats low, a long tail of higher ones), so Data shape is set to skewed: compare the normal and fitted-shape results under Capability. Illustrative limit, not a customer spec.' },
     hmsi:    { g: 'Steel: iron & steel making', label: 'Hot metal silicon per cast (0.30–0.60 %)', part: 'Hot metal silicon', unit: '%', type: 'two', nominal: 0.45, plus: 0.15, minus: 0.15, n: 1, shift: 0.06, why: W1 + ': one result per blast furnace cast. Furnace condition changes slowly, so expect drifts and shifts.' },
     ys:      { g: 'Steel: rolling & coating', label: 'Yield strength, E250 plate (min 250 MPa)', part: 'Yield strength', unit: 'MPa', type: 'lower', limit: 250, typical: 300, n: 1, why: W1 + ': tensile testing is destructive, one test per heat or coil. Lower limit only, so no Cp/Pp.' },
     crthk:   { g: 'Steel: rolling & coating', label: 'Cold-rolled strip thickness (1.00 ± 0.05 mm)', part: 'Strip thickness', unit: 'mm', type: 'two', nominal: 1.00, plus: 0.05, minus: 0.05, n: 5, shift: 0.1, why: '5 readings along each coil form one check. Coil-to-coil differences are large, so watch the X̄ chart signal almost constantly: limits built from within-coil variation are too narrow for the coil averages. In practice, chart coil averages with I-MR (try n = 1). ' + AC },
     gauge:   { g: 'Steel: rolling & coating', label: 'Strip thickness, online gauge every second (1.00 ± 0.05 mm)', part: 'Strip thickness (gauge)', unit: 'mm', type: 'two', nominal: 1.00, plus: 0.05, minus: 0.05, n: 1, phi: 0.9, why: 'Readings one second apart from an X-ray gauge are linked: each one is close to the previous one (see "Continuous processes: linked readings", set to 0.9). Watch the I-chart flag false alarms and Cp look better than Pp. Fix: chart one value per coil, or space readings far apart.' },
+    flat:    { g: 'Steel: rolling & coating', label: 'Cold-rolled coil flatness (max 10 I-units)', part: 'Coil flatness', unit: 'I-units', type: 'upper', limit: 10, typical: 4.2, n: 1, shape: 'skewed', why: W1 + ': one flatness result per coil. Upper limit only, so no Cp/Pp. Flatness cannot be better than perfectly flat (zero), so the data is skewed with a long tail towards the limit; Data shape is set to skewed. Illustrative limit, not a customer spec.' },
     coiltemp:{ g: 'Steel: rolling & coating', label: 'Hot strip coiling temperature (600 ± 20 °C)', part: 'Coiling temperature', unit: '°C', type: 'two', nominal: 600, plus: 20, minus: 20, n: 1, why: W1 + ': chart the average temperature of each coil. ' + AC },
     zincmass:{ g: 'Steel: rolling & coating', label: 'Galvanising zinc coating mass (min 120 g/m²)', part: 'Zinc coating mass', unit: 'g/m²', type: 'lower', limit: 120, typical: 140, n: 1, why: W1 + ': one triple-spot test result per coil. Lower limit only, so no Cp/Pp. Running far above the minimum costs zinc, so centring matters for cost too.' },
     bathtemp:{ g: 'Aluminium: smelting & casting', label: 'Potline bath temperature (958 ± 7 °C)', part: 'Bath temperature', unit: '°C', type: 'two', nominal: 958, plus: 7, minus: 7, n: 1, why: W1 + ': one measurement per pot per round. Chart each pot separately; mixing pots hides pot-specific problems.' },
-    fe:      { g: 'Aluminium: smelting & casting', label: 'Metal iron content (max 0.20 % Fe)', part: 'Iron content', unit: '%', type: 'upper', limit: 0.20, typical: 0.12, n: 1, why: W1 + ': one spectro result per tapping or cast. Upper limit only, so no Cp/Pp.' },
+    fe:      { g: 'Aluminium: smelting & casting', label: 'Metal iron content (max 0.20 % Fe)', part: 'Iron content', unit: '%', type: 'upper', limit: 0.20, typical: 0.085, n: 1, shape: 'skewed', why: W1 + ': one spectro result per tapping or cast. Upper limit only, so no Cp/Pp. Impurity levels near zero are usually skewed, so Data shape is set to skewed: compare the normal and fitted-shape results under Capability.' },
     alsheet: { g: 'Aluminium: rolling & extrusion', label: 'Cold-rolled sheet thickness (0.250 ± 0.005 mm)', part: 'Sheet thickness', unit: 'mm', type: 'two', nominal: 0.25, plus: 0.005, minus: 0.005, n: 5, shift: 0.08, why: '5 readings along each coil form one check; coil-to-coil differences show up as batch shift (Cp ≫ Pp). ' + AC },
     extwall: { g: 'Aluminium: rolling & extrusion', label: 'Extruded profile wall thickness (2.00 ± 0.15 mm)', part: 'Profile wall thickness', unit: 'mm', type: 'two', nominal: 2.0, plus: 0.15, minus: 0.15, n: 5, why: 'Consecutive cut lengths from the same billet and die. A new billet or die change starts a new batch.' },
+    tmtys:   { g: 'Steel: long products (TMT, wire rod)', label: 'TMT bar yield strength, Fe 500D (min 500 MPa)', part: 'Yield strength', unit: 'MPa', type: 'lower', limit: 500, typical: 560, n: 1, why: W1 + ': tensile testing is destructive, one test per heat or lot. Lower limit only, so no Cp/Pp. Strength results are usually close to bell-shaped: <b>one-sided does not automatically mean skewed.</b> Check the shape result under Capability.' },
+    straight:{ g: 'Aluminium: rolling & extrusion', label: 'Extruded profile straightness (max 1.0 mm/m)', part: 'Profile straightness', unit: 'mm/m', type: 'upper', limit: 1.0, typical: 0.42, n: 5, shape: 'skewed', why: '5 consecutive profiles from the same billet and die form one check. Straightness cannot go below zero (perfectly straight), so the data is skewed with a long tail towards the limit; Data shape is set to skewed. Illustrative limit, not a customer spec.' },
     furnace: { g: 'Process chemistry / heat treatment', label: 'Hardening furnace temperature (860 ± 10 °C)', part: 'Furnace temperature', unit: '°C', type: 'two', nominal: 860, plus: 10, minus: 10, n: 1, why: W1 + ': one reading per check of a slow-changing process.' },
   };
 
@@ -554,7 +571,7 @@
     part: '', unit: '', type: 'two', nominal: 0, plus: 0, minus: 0, limit: 0, typical: 0,
     usl: null, lsl: null, C: 0, W: 1, dec: 2, target: 0,
     mean: 0, sigma: 0, shift: 0, n: 1, disp: 'R',
-    speed: 'medium', running: true, showCurves: false, showBands: false, phi: 0, ruleSet: 'basic',
+    speed: 'medium', running: true, showCurves: false, showBands: false, phi: 0, ruleSet: 'basic', shape: 'normal',
   };
   let subgroups = [];   // {vals, x, r, s, mr, batch, rules:[]}
   let current = [];
@@ -596,6 +613,11 @@
     if (p > 0.5) return 'more than half the parts';
     return 'about 1 in ' + sig2(1 / p).toLocaleString('en-US');
   }
+  function zeroFoundNote(found, total) {
+    if (found > 0 || total < 1) return '';
+    const up = 1 - Math.pow(0.05, 1 / total);
+    return `<div class="zero-note">0 found in ${total} does not prove 0 ppm: with 95% confidence the true rate could still be up to <b>${ppm(up)}</b> (about 3 ÷ ${total}, the "rule of three"). Finding none only says the rate is probably below that.</div>`;
+  }
   function ppm(p) { if (p < 1e-6) return '< 1 ppm'; return Math.round(p * 1e6).toLocaleString('en-US') + ' ppm'; }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -636,7 +658,7 @@
     const p = PRESETS[key]; if (!p) return;
     el.preset.value = key;
     el.partName.value = p.part; el.unit.value = p.unit; S.type = p.type;
-    S.n = p.n; S.disp = p.disp || 'R'; S.phi = p.phi || 0; syncPhi(); showRec(p);
+    S.n = p.n; S.disp = p.disp || 'R'; S.phi = p.phi || 0; S.shape = p.shape || 'normal'; syncPhi(); showRec(p);
     if (p.type === 'two') { el.nominal.value = p.nominal; el.tolPlus.value = p.plus; el.tolMinus.value = p.minus; }
     else { el.limit.value = p.limit; el.typical.value = p.typical; }
     applySpec(true);
@@ -702,6 +724,7 @@
       el[p.num].value = S[p.key].toFixed(S.dec + 1);
     });
     el.nSl.value = S.n; el.nNum.value = S.n;
+    $('f-shape').hidden = S.type === 'two'; setSeg($('shapeSeg'), S.shape);
     el.dispSeg.hidden = S.n === 1;
     setSeg(el.dispSeg, S.disp);
     el.nHint.textContent = S.n === 1
@@ -733,6 +756,7 @@
   }
   el.nSl.addEventListener('input', () => setN(parseInt(el.nSl.value, 10)));
   el.nNum.addEventListener('change', () => setN(parseInt(el.nNum.value, 10)));
+  $('shapeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.shape = b.dataset.v; syncControls(); resetRun(); });
   el.dispSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.disp = b.dataset.v; syncControls(); resetRun(); });
 
   // spec listeners
@@ -943,7 +967,13 @@
     scenarioBefore();
     const phi = S.phi || 0;
     arPrev = phi * arPrev + Math.sqrt(1 - phi * phi) * gauss() * S.sigma;
-    const v = S.mean + batchOffset + arPrev;
+    const base = S.mean + batchOffset;
+    let v;
+    if (S.shape === 'skewed' && S.type !== 'two' && base > 0 && S.sigma > 0) {
+      // lognormal with the same average and spread: values stay above zero, long tail upwards
+      const cv = S.sigma / base, sl = Math.sqrt(Math.log(1 + cv * cv));
+      v = base * Math.exp(sl * (arPrev / S.sigma) - sl * sl / 2);
+    } else v = base + arPrev;
     if (firstParts.length < 50) firstParts.push(v);
     scenarioAfter(v);
     current.push(v); partCount++; lastPart = v;
@@ -956,34 +986,36 @@
     const g = { vals, x: mean(vals), r: Math.max(...vals) - Math.min(...vals), s: vals.length > 1 ? sd(vals) : 0, mr: null, batch: batchNo, rules: [] };
     const prev = subgroups[subgroups.length - 1];
     if (S.n === 1 && prev) g.mr = Math.abs(g.x - prev.x);
-    subgroups.push(g); sgTotal++;
+    subgroups.push(g); sgTotal++; g.no = sgTotal;
     if (subgroups.length > MAX_SG) subgroups.shift();
-    if (!limits && subgroups.length >= BASELINE) computeLimits(subgroups.slice(-BASELINE));
-    if (limits) checkRules(g);
+    // The baseline checks are judged against the limits made from them, as on the shop floor.
+    if (!limits && subgroups.length >= BASELINE) { computeLimits(subgroups.slice(-BASELINE)); reevaluate(); }
+    else if (limits) checkRules(g);
   }
   function dispVal(g) { return S.n === 1 ? g.mr : (S.disp === 'R' ? g.r : g.s); }
-  function computeLimits(sgs) {
+  function limitsFrom(sgs) {
     const xbb = mean(sgs.map(g => g.x));
     if (S.n === 1) {
       const mrs = sgs.map(g => g.mr).filter(v => v != null);
       const mrb = mean(mrs);
-      limits = { cl: xbb, ucl: xbb + 2.66 * mrb, lcl: xbb - 2.66 * mrb, dcl: mrb, ducl: 3.267 * mrb, dlcl: 0 };
+      return { cl: xbb, ucl: xbb + 2.66 * mrb, lcl: xbb - 2.66 * mrb, dcl: mrb, ducl: 3.267 * mrb, dlcl: 0 };
     } else if (S.disp === 'R') {
       const k = K[S.n], rb = mean(sgs.map(g => g.r));
-      limits = { cl: xbb, ucl: xbb + k[1] * rb, lcl: xbb - k[1] * rb, dcl: rb, ducl: k[3] * rb, dlcl: k[2] * rb };
+      return { cl: xbb, ucl: xbb + k[1] * rb, lcl: xbb - k[1] * rb, dcl: rb, ducl: k[3] * rb, dlcl: k[2] * rb };
     } else {
       const k = K[S.n], sb = mean(sgs.map(g => g.s));
-      limits = { cl: xbb, ucl: xbb + k[5] * sb, lcl: xbb - k[5] * sb, dcl: sb, ducl: k[7] * sb, dlcl: k[6] * sb };
+      return { cl: xbb, ucl: xbb + k[5] * sb, lcl: xbb - k[5] * sb, dcl: sb, ducl: k[7] * sb, dlcl: k[6] * sb };
     }
   }
+  function computeLimits(sgs) { limits = limitsFrom(sgs); }
   const LIMIT_RULES = ['x-high', 'x-low', 'd-high', 'd-low'];
-  function checkRules(g, idx) {
-    if (idx == null) idx = subgroups.length - 1;
-    const L = limits, rules = [];
+  // Rules for check idx of arr against limits L (pure: used for the live chart and for the capability re-check).
+  function rulesAt(arr, idx, L) {
+    const g = arr[idx], rules = [];
     if (g.x > L.ucl || g.x < L.lcl) rules.push(g.x > L.ucl ? 'x-high' : 'x-low');
     const d = dispVal(g);
     if (d != null && (d > L.ducl || (L.dlcl > 0 && d < L.dlcl))) rules.push(d > L.ducl ? 'd-high' : 'd-low');
-    const lastN = k => idx + 1 >= k ? subgroups.slice(idx + 1 - k, idx + 1).map(h => h.x) : null;
+    const lastN = k => idx + 1 >= k ? arr.slice(idx + 1 - k, idx + 1).map(h => h.x) : null;
     const last = lastN(RUN);
     if (last) {
       if (last.every(x => x > L.cl)) rules.push('run-above');
@@ -1001,6 +1033,11 @@
       if (l8 && l8.every(x => Math.abs(z(x)) > 1) && l8.some(x => z(x) > 0) && l8.some(x => z(x) < 0)) rules.push('mixture');
       if (l14) { let alt = true; for (let i = 2; i < l14.length; i++) if (Math.sign(l14[i] - l14[i - 1]) !== -Math.sign(l14[i - 1] - l14[i - 2]) || l14[i] === l14[i - 1]) alt = false; if (alt) rules.push('alternate'); }
     }
+    return rules;
+  }
+  function checkRules(g, idx) {
+    if (idx == null) idx = subgroups.length - 1;
+    const rules = rulesAt(subgroups, idx, limits);
     g.rules = rules;
     if (rules.length) { sigCount++; lastSignal = { rule: rules[0], g, inSpec: !g.vals.some(outSpec), at: idx + 1 }; }
   }
@@ -1010,16 +1047,81 @@
     if (limits) subgroups.forEach((g, i) => checkRules(g, i));
     dirty = true;
   }
+  // ---------- Data shape (one-sided specs) ----------
+  // Skewness decides whether the bell-shaped calculation can be trusted. If the data is clearly skewed,
+  // a lognormal is fitted and Ppk uses the percentile method (ISO 22514-2, AIAG SPC manual):
+  // Ppk = (USL - median) / (99.865% point - median), or (median - LSL) / (median - 0.135% point).
+  function shapeFit(vals) {
+    const N = vals.length;
+    if (S.type === 'two' || N < 20 || vals.some(v => !(v > 0))) return null;
+    const m = mean(vals), s = sd(vals);
+    if (!(s > 0)) return null;
+    const g1 = vals.reduce((a, v) => a + ((v - m) / s) ** 3, 0) * N / ((N - 1) * (N - 2));
+    const thr = Math.max(0.5, 2 * Math.sqrt(6 / N));
+    const lv = vals.map(Math.log), ml = mean(lv), sl = sd(lv);
+    const med = Math.exp(ml), hi = Math.exp(ml + 3 * sl), lo = Math.exp(ml - 3 * sl);
+    const up = S.usl != null;
+    const ppk = up ? (S.usl - med) / (hi - med) : (med - S.lsl) / (med - lo);
+    const oot = up ? upperTail((Math.log(S.usl) - ml) / sl) : (S.lsl > 0 ? upperTail((ml - Math.log(S.lsl)) / sl) : 0);
+    return { g1, thr, skewed: g1 > thr, left: g1 < -thr, ml, sl, med, p99: up ? hi : lo, n3: up ? m + 3 * s : m - 3 * s, ppk, oot };
+  }
+  // The same checks on a log scale, for judging stability when the data is skewed.
+  function logSubgroups(sgs) {
+    let prev = null;
+    return sgs.map(g => {
+      const lv = g.vals.map(Math.log), x = mean(lv);
+      const o = { vals: lv, x, r: Math.max(...lv) - Math.min(...lv), s: lv.length > 1 ? sd(lv) : 0, mr: prev == null ? null : Math.abs(x - prev), no: g.no };
+      prev = x; return o;
+    });
+  }
+  // Stability for capability is judged the way a capability study does it (Phase I): every check used for
+  // capability is re-checked against control limits calculated from those same checks. The live chart keeps
+  // its limits from the first 25 checks (Phase II monitoring); with only 25 checks those limits are themselves
+  // uncertain, so on long runs they flag far more false alarms than limits from all the data.
   function stability() {
-    if (!limits) return 'unknown';
-    const recent = subgroups.slice(-BASELINE).filter(g => g.rules.length);
-    if (!recent.length) return 'stable';
+    if (!limits) return { state: 'unknown', eps: [] };
+    // Skewed data is re-checked on a log scale; on raw values an individuals chart flags the long tail as signals.
+    const sh = shapeFit(subgroups.flatMap(g => g.vals));
+    const data = sh && sh.skewed ? logSubgroups(subgroups) : subgroups;
+    const L = limitsFrom(data);
+    const flags = data.map((g, i) => rulesAt(data, i, L));
+    const idxs = []; flags.forEach((r, i) => { if (r.length) idxs.push(i); });
+    if (!idxs.length) return { state: 'stable', eps: [] };
     // group flagged checks into episodes (consecutive flagged checks = one episode)
-    const idxs = subgroups.slice(-BASELINE).map((g, i) => g.rules.length ? i : -1).filter(i => i >= 0);
-    const eps = []; idxs.forEach((v, k) => { if (k === 0 || v !== idxs[k - 1] + 1) eps.push(1); else eps[eps.length - 1]++; });
-    // one short, isolated episode can be a false alarm; repeated or sustained signals cannot
-    const beyond = subgroups.slice(-BASELINE).filter(g => g.rules.some(r => LIMIT_RULES.includes(r))).length;
-    return eps.length === 1 && beyond <= 2 ? 'possible' : 'unstable';
+    const eps = [];
+    idxs.forEach((v, k) => {
+      const g = data[v];
+      // flagged checks with up to GAP clean checks between them belong to the same episode
+      if (k === 0 || v - idxs[k - 1] > GAP + 1) eps.push({ from: g.no, to: g.no, len: 0, beyond: 0 });
+      const e = eps[eps.length - 1]; e.to = g.no; e.len++;
+      if (flags[v].some(r => LIMIT_RULES.includes(r))) e.beyond++;
+    });
+    // A stable process still gives the occasional short, isolated false alarm, more often on long runs
+    // and with all 8 patterns switched on. Sustained or repeated signals mean a real change.
+    const per = S.ruleSet === 'all' ? FA_EVERY.all : FA_EVERY.basic;
+    const allowed = Math.max(2, Math.ceil(subgroups.length / per));
+    // On a stable process (simulated), single episodes stay shorter than these in 99% of 300-check runs.
+    // On I-MR one odd part flags both the I and the MR chart, so it gets more room.
+    const lenMax = S.ruleSet === 'all' ? 13 : 10, beyondMax = S.n === 1 ? 4 : 3;
+    const sustained = eps.some(e => e.len >= lenMax || e.beyond >= beyondMax);
+    return { state: !sustained && eps.length <= allowed ? 'possible' : 'unstable', eps };
+  }
+  function epsText(eps) {
+    const t = eps.slice(0, 3).map(e => e.from === e.to ? `${e.from}` : `${e.from}–${e.to}`).join(', ');
+    return (eps.length === 1 && eps[0].from === eps[0].to ? 'check ' : 'checks ') + t + (eps.length > 3 ? ` and ${eps.length - 3} more` : '');
+  }
+  // Uncertainty of the indices (approximate; assumes normal, stable data; uses all N readings).
+  // Cpk/Ppk: Bissell (1990). Cp/Pp: chi-square interval, quantiles by the Wilson-Hilferty approximation.
+  function chiQ(z, nu) { const a = 2 / (9 * nu); return nu * Math.pow(1 - a + z * Math.sqrt(a), 3); }
+  function kBounds(k, N) {
+    if (k == null || !isFinite(k) || N < 3) return null;
+    const se = Math.sqrt(1 / (9 * N) + k * k / (2 * (N - 1)));
+    return { lo95: k - 1.645 * se, lo: k - 1.96 * se, hi: k + 1.96 * se };
+  }
+  function pBounds(p, N) {
+    if (p == null || !isFinite(p) || N < 3) return null;
+    const nu = N - 1, f = z => p * Math.sqrt(chiQ(z, nu) / nu);
+    return { lo95: f(-1.645), lo: f(-1.96), hi: f(1.96) };
   }
 
   // ---------- Capability ----------
@@ -1038,7 +1140,10 @@
       return { p: (S.usl != null && S.lsl != null) ? (S.usl - S.lsl) / (6 * s) : null, k: Math.min(up, lo) };
     };
     const w = idx(sW), o = idx(sO);
-    const state = stability();
+    const st = stability(), state = st.state;
+    const prelim = !limits || subgroups.length < BASELINE || vals.length < MIN_READINGS;
+    const shape = shapeFit(vals);
+    const N = vals.length;
     let cm = null;
     if (firstParts.length >= 50) {
       const fm = mean(firstParts), fs = sd(firstParts);
@@ -1049,7 +1154,9 @@
     return {
       ready: true, m, sW, sO, cp: w.p, cpk: w.k, pp: o.p, ppk: o.k,
       ootW: pOut(m, sW), ootO: pOut(m, sO), found: vals.filter(outSpec).length, total: vals.length,
-      limitsSet: !!limits, state, stable: state === 'stable' || state === 'possible', nSg: subgroups.length,
+      limitsSet: !!limits, state, eps: st.eps, stable: state === 'stable' || state === 'possible', nSg: subgroups.length,
+      prelim, trimmed: sgTotal > subgroups.length, shape, skewed: !!(shape && shape.skewed),
+      bCp: pBounds(w.p, N), bPp: pBounds(o.p, N), bCpk: kBounds(w.k, N), bPpk: kBounds(o.k, N),
       bar: S.n === 1 ? mean(mrs) : (S.disp === 'R' ? mean(subgroups.map(g => g.r)) : mean(subgroups.map(g => g.s))),
       cm, batches: new Set(subgroups.map(g => g.batch)).size,
     };
@@ -1062,6 +1169,19 @@
     return { cls: 'v-bad', label: 'Not capable' };
   }
   function verdict(c) {
+    if (c.prelim) {
+      const need = [];
+      if (c.nSg < BASELINE) need.push(`${c.nSg} of ${BASELINE} checks`);
+      if (c.total < MIN_READINGS) need.push(`${c.total} of ${MIN_READINGS} readings`);
+      return { cls: 'v-none', html: `Preliminary: not enough data to judge capability yet${need.length ? ' (' + need.join(', ') + ')' : ''}.<small>A capability study needs at least ${BASELINE} checks and ${MIN_READINGS} readings, and the control chart must show the process is stable first. Until then the numbers below can move a lot.</small>` };
+    }
+    if (c.skewed) {
+      const b = band(c.shape.ppk);
+      const head = { 'Highly capable': 'Highly capable: plenty of room inside the limit.', 'Capable': 'Capable: meets the usual 1.33 minimum.', 'Marginal': 'Marginal: very little room for error.', 'Not capable': 'Not capable: out-of-spec parts are being made.' }[b.label];
+      const why = `Judged on Ppk ${f2(c.shape.ppk)} from the fitted shape, not the bell-shaped calculation (Ppk ${f2(c.ppk)}), because the data is clearly skewed (skewness ${c.shape.g1.toFixed(2)}).`;
+      const st = c.state === 'unstable' ? ` Signals at ${epsText(c.eps)} are also still in this data: find the cause.` : '';
+      return { cls: b.cls, html: `${head}<small>${why}${st} See "Is the data bell-shaped?" below.</small>` };
+    }
     const useCpk = c.stable;
     const v = useCpk ? c.cpk : c.ppk;
     const b = band(v);
@@ -1076,14 +1196,19 @@
     if (nearest) tips.push('The spread is fine, but the average is off-centre. Re-centre the process.');
     if (c.cpk != null && c.ppk != null && c.cpk >= 1.0 && c.ppk < 0.85 * c.cpk) tips.push('The machine can do it, but batch-to-batch shifts are costing you. Control setups, tool changes and material lots.');
     if (c.cp != null && c.cp < 1.0) tips.push('The spread is wider than the tolerance. Re-centring alone will not fix this; the variation itself must come down.');
-    const basis = useCpk ? `Judged on Cpk ${f2(c.cpk)} (process ${c.state === 'possible' ? 'looks stable; one possible signal to check' : 'is stable'}).` : (c.limitsSet ? `Judged on Ppk ${f2(c.ppk)}, because the process is not stable.` : `Judged on Ppk ${f2(c.ppk)} until control limits are set.`);
+    const lb = useCpk ? c.bCpk : c.bPpk;
+    const basis = (useCpk
+      ? `Judged on Cpk ${f2(c.cpk)} (process ${c.state === 'possible' ? 'looks stable; isolated signal at ' + epsText(c.eps) + ' to check' : 'is stable'}).`
+      : `Judged on Ppk ${f2(c.ppk)}, because signals at ${epsText(c.eps)} are still in this data.`)
+      + (lb ? ` With ${c.total} readings, we can be 95% sure it is at least ${f2(lb.lo95)}.` : '');
     return { cls: b.cls, html: `${main}<small>${basis}${tips.length ? ' ' + tips.join(' ') : ''}</small>` };
   }
-  function tileHtml(name, value, desc, color, na) {
+  function tileHtml(name, value, desc, color, na, prelim, bnd) {
     const b = band(value);
-    const badge = na ? '' : `<span class="badge ${b.cls}">${b.label}</span>`;
-    return `<div class="tile ${na ? 'dim' : ''}"><div class="k"><i style="background:${color}"></i>${name}</div>
-      <div class="v">${na ? 'n/a' : f2(value)}</div>${badge}<div class="d">${desc}</div></div>`;
+    const badge = na ? '' : (prelim ? '<span class="badge v-none">Preliminary</span>' : `<span class="badge ${b.cls}">${b.label}</span>`);
+    const lo = !na && !prelim && bnd ? `<div class="d">95% sure it is at least <b>${f2(bnd.lo95)}</b></div>` : '';
+    return `<div class="tile ${na || prelim ? 'dim' : ''}"><div class="k"><i style="background:${color}"></i>${name}</div>
+      <div class="v">${na ? 'n/a' : f2(value)}</div>${badge}${lo}<div class="d">${desc}</div></div>`;
   }
   function renderCap(c) {
     if (!c.ready) {
@@ -1092,28 +1217,54 @@
     }
     const v = verdict(c);
     const one = S.type !== 'two';
-    const naNote = one ? '<div class="hint">Cp and Pp need both limits (they compare tolerance width to spread). With a one-sided spec, use Cpk and Ppk.</div>' : '';
+    const naNote = one ? '<div class="hint">Cp and Pp need both limits (they compare tolerance width to spread). With a one-sided spec, use Cpk and Ppk. One-sided characteristics with a natural zero (roughness, runout, flatness, impurity content) are often skewed, not bell-shaped. Check the histogram before trusting a normal-based Cpk; it can look better than reality on the long-tail side.</div>' : '';
+    const bellNote = c.skewed ? ' <b>Assumes a bell shape: too optimistic for this data.</b>' : '';
+    const basisLine = `<div class="calc-note" style="margin:0 0 8px;">Based on ${c.trimmed ? `the last ${c.nSg} checks` : `all ${c.nSg} checks`} (${c.total} readings) in this run.</div>`;
     el.capOut.innerHTML = `
+      ${basisLine}
       <div class="verdict ${v.cls}">${v.html}</div>
       <div class="tiles">
-        ${tileHtml('Cp', c.cp, 'Uses σ within (neighbouring parts). Spread vs tolerance; ignores centring.', 'var(--accent)', one)}
-        ${tileHtml('Cpk', c.cpk, 'Uses σ within. Includes centring.', 'var(--accent)', false)}
-        ${tileHtml('Pp', c.pp, 'Uses σ overall (all parts). Spread vs tolerance; ignores centring.', 'var(--overall)', one)}
-        ${tileHtml('Ppk', c.ppk, 'Uses σ overall. Includes centring: what the customer received.', 'var(--overall)', false)}
+        ${tileHtml('Cp', c.cp, 'Uses σ within (neighbouring parts). Spread vs tolerance; ignores centring.', 'var(--accent)', one, c.prelim, c.stable ? c.bCp : null)}
+        ${tileHtml('Cpk', c.cpk, 'Uses σ within. Includes centring.' + bellNote, 'var(--accent)', false, c.prelim, c.stable && !c.skewed ? c.bCpk : null)}
+        ${tileHtml('Pp', c.pp, 'Uses σ overall (all parts). Spread vs tolerance; ignores centring.', 'var(--overall)', one, c.prelim, c.bPp)}
+        ${tileHtml('Ppk', c.ppk, 'Uses σ overall. Includes centring: what the customer received.' + bellNote, 'var(--overall)', false, c.prelim, c.skewed ? null : c.bPpk)}
       </div>
       ${naNote}
       <div class="stab ${c.state === 'stable' ? 'v-good' : (c.limitsSet ? 'v-warn' : 'v-none')}">${
-        c.state === 'stable' ? 'Process is stable (no signals in the last 25 checks), so Cpk is meaningful.'
-        : c.state === 'possible' ? 'Probably stable: one isolated signal in the last 25 checks. Even a perfectly stable process gives an occasional false alarm on a long run. Check what happened at that point; if nothing changed, carry on. Repeated or sustained signals mean a real change.'
-        : c.limitsSet ? 'Process is NOT stable: the control chart shows signals. Cpk is not reliable; use Ppk and find the cause.'
+        c.state === 'stable' ? `Process is stable: no signals in the ${c.nSg} checks used, so Cpk is meaningful.`
+        : c.state === 'possible' ? `Probably stable: isolated signal at ${epsText(c.eps)}. Even a perfectly stable process gives an occasional false alarm on a long run. Check what happened there; if nothing changed, carry on. Repeated or sustained signals mean a real change.`
+        : c.limitsSet ? `Process is NOT stable: signals at ${epsText(c.eps)} are still in the data used for capability, so Cpk is not reliable; use Ppk and find the cause. On the shop floor, points are only taken out once the cause is found and fixed, with the reason recorded. Here, press Reset for a clean run.`
         : `Stability unknown until control limits are set (${Math.min(c.nSg, BASELINE)} of ${BASELINE} checks).`}</div>
+      ${shapeHtml(c)}
       <div class="oot">
         <div><span>Expected out of tolerance using σ within</span><span>${oneIn(c.ootW)} · ${ppm(c.ootW)}</span></div>
         <div><span>Expected out of tolerance using σ overall</span><span>${oneIn(c.ootO)} · ${ppm(c.ootO)}</span></div>
+        ${c.skewed ? `<div><span><b>Expected out of tolerance using the fitted shape</b></span><span><b>${oneIn(c.shape.oot)} · ${ppm(c.shape.oot)}</b></span></div>` : ''}
         <div><span>Actually found in this run</span><span>${c.found} of ${c.total} parts</span></div>
+        ${zeroFoundNote(c.found, c.total)}
       </div>
       `;
     renderCalc(c);
+  }
+  function shapeHtml(c) {
+    const sh = c.shape;
+    if (S.type === 'two') return '';
+    if (!sh) return `<div class="cm-box"><b>Is the data bell-shaped?</b> ${c.total < 20 ? 'Needs at least 20 readings to judge.' : 'Cannot fit a skewed shape: some readings are zero or negative.'}</div>`;
+    const lim = S.usl != null ? 'USL' : 'LSL', pt = S.usl != null ? '99.865%' : '0.135%';
+    const verdictTxt = sh.skewed
+      ? `<b>Clearly skewed</b> (skewness ${sh.g1.toFixed(2)}; bell-shaped data is close to 0, and above ${sh.thr.toFixed(2)} counts as clearly skewed with ${c.total} readings). Most values bunch ${S.usl != null ? 'low' : 'high'} with a long tail towards the ${lim}, so the bell-shaped calculation underestimates how many parts land beyond it. Use the fitted-shape result.`
+      : sh.left ? `Skewed the other way (skewness ${sh.g1.toFixed(2)}): the long tail points towards zero. The fitted shape here only handles a long upper tail, so check this data with statistical software.`
+      : `<b>No clear skew</b> (skewness ${sh.g1.toFixed(2)}, below ${sh.thr.toFixed(2)}): use the bell-shaped calculation. The fitted-shape row is shown for comparison only; forcing a skewed shape onto bell-shaped data gives a wrong answer too.`;
+    return `<div class="cm-box"><b>Is the data bell-shaped?</b> ${verdictTxt}
+      <table class="gap-table" style="margin-top:8px;">
+        <tr><th>Method</th><th>Ppk</th><th>${pt} point</th><th>Expected beyond ${lim}</th></tr>
+        <tr class="${sh.skewed ? '' : 'hit'}"><td>Bell-shaped (normal) calculation</td><td>${f2(c.ppk)}</td><td>${fmtU(sh.n3)}</td><td>${ppm(c.ootO)}</td></tr>
+        <tr class="${sh.skewed ? 'hit' : ''}"><td>Fitted shape (lognormal, percentile method)</td><td>${f2(sh.ppk)}</td><td>${fmtU(sh.p99)}</td><td>${ppm(sh.oot)}</td></tr>
+        <tr><td>Actually found in this run</td><td></td><td></td><td>${c.found} of ${c.total} parts</td></tr>
+      </table>
+      ${zeroFoundNote(c.found, c.total)}
+      <div class="calc-note" style="margin-top:6px;">Percentile method: Ppk = (${S.usl != null ? 'USL − median) ÷ (99.865% point − median' : 'median − LSL) ÷ (median − 0.135% point'}). Same idea as 3σ, measured on the real shape (ISO 22514-2; AIAG SPC manual, non-normal data). With skewed data, stability for capability is checked on log values. The live chart above uses raw values, so ${S.n === 1 ? 'expect extra points above the upper control limit from the long tail' : 'its averages are less affected, but treat signals near the tail with care'}.</div>
+    </div>`;
   }
   function renderCalc(c) {
     const out = $('calcOut');
@@ -1137,24 +1288,26 @@
     const hiW = (two ? c.cp : c.cpk) >= 1.33, hiO = (two ? c.pp : c.ppk) >= 1.33;
     const row = (a, b, txt, act) => `<tr class="${hiW === a && hiO === b ? 'hit' : ''}"><td>${a ? 'High' : 'Low'}</td><td>${b ? 'High' : 'Low'}</td><td>${txt}</td><td>${act}</td></tr>`;
     const nm = two ? ['Cp', 'Pp'] : ['Cpk', 'Ppk'];
+    const rng = b => b ? ` <span style="opacity:.8">(likely ${f2(b.lo)} – ${f2(b.hi)})</span>` : '';
     out.innerHTML = `
       <div class="calc-note" style="margin-top:8px;">Same data for both: <b>${c.total} ${esc(S.part.toLowerCase())} readings</b> (${c.nSg} checks of ${S.n}${c.batches > 1 && S.shift > 0 ? `, across ${c.batches} batches` : ''}). Only the way σ is calculated differs.</div>
       <div class="calc-grid">
         <div class="calc-col w">
           <h5 style="color:var(--accent)">σ within → Cp, Cpk</h5>
           <div class="f">σ within = ${est[0]} ÷ ${S.n === 1 ? 'd2' : (S.disp === 'R' ? 'd2' : 'c4')} = ${fmt(c.bar, 1)} ÷ ${est[1]} = <b>${fmt(c.sW, 1)}${u}</b></div>
-          ${two ? `<div class="f">Cp = ${fmt(T)} ÷ (6 × ${fmt(c.sW, 1)}) = <b>${f2(c.cp)}</b></div>` : ''}
-          <div class="f">Cpk = ${kLine(c.sW)} = <b>${f2(c.cpk)}</b></div>
+          ${two ? `<div class="f">Cp = ${fmt(T)} ÷ (6 × ${fmt(c.sW, 1)}) = <b>${f2(c.cp)}</b>${rng(c.bCp)}</div>` : ''}
+          <div class="f">Cpk = ${kLine(c.sW)} = <b>${f2(c.cpk)}</b>${rng(c.bCpk)}</div>
           <div class="x">${est[0]} is the ${est[2]}. It only compares parts with their neighbours, so jumps <b>between</b> checks are not counted.</div>
         </div>
         <div class="calc-col o">
           <h5 style="color:var(--overall)">σ overall → Pp, Ppk</h5>
           <div class="f">σ overall = std dev of all ${c.total} readings = <b>${fmt(c.sO, 1)}${u}</b></div>
-          ${two ? `<div class="f">Pp = ${fmt(T)} ÷ (6 × ${fmt(c.sO, 1)}) = <b>${f2(c.pp)}</b></div>` : ''}
-          <div class="f">Ppk = ${kLine(c.sO)} = <b>${f2(c.ppk)}</b></div>
+          ${two ? `<div class="f">Pp = ${fmt(T)} ÷ (6 × ${fmt(c.sO, 1)}) = <b>${f2(c.pp)}</b>${rng(c.bPp)}</div>` : ''}
+          <div class="f">Ppk = ${kLine(c.sO)} = <b>${f2(c.ppk)}</b>${rng(c.bPpk)}</div>
           <div class="x">Compares every reading with the overall average (${fmtU(c.m)}), so everything that moved during the period is counted.</div>
         </div>
       </div>
+      <div class="calc-note"><b>How sure are these numbers?</b> "Likely" is the 95% range for the true value, given only ${c.total} readings: the fewer the readings, the wider it gets. Approximate: Bissell (1990) for Cpk/Ppk, chi-square for Cp/Pp, both assuming normal and stable data; slightly narrow for Cp/Cpk.${c.prelim ? ' <b>Still preliminary:</b> not enough data for a capability study yet.' : ''}</div>
       <div class="calc-note">${gapTxt}${S.phi >= 0.3 ? ' <b>Linked readings are switched on:</b> neighbouring readings are close to each other, so σ within is underestimated. Cp looks better than it really is and the control limits are too tight.' : ''}</div>
       ${c.cm && scen === 'machine' ? `<div class="cm-box"><b>Machine study (first 50 consecutive parts):</b> s = ${fmt(c.cm.s, 1)}${u}${c.cm.cm != null ? ` → Cm = ${fmt(T)} ÷ (6 × ${fmt(c.cm.s, 1)}) = <b>${f2(c.cm.cm)}</b>` : ''} · Cmk = <b>${f2(c.cm.cmk)}</b>. Same formula as Pp, but only on a short, clean run.</div>` : ''}
       <table class="gap-table">
@@ -1194,13 +1347,16 @@
     }
     const r = RULE_TEXT[lastSignal.rule];
     const ago = subgroups.length - lastSignal.at;
+    const stNow = stability().state;
     if (ago >= BASELINE) {
       el.sigOut.className = 'signal empty';
-      el.sigOut.innerHTML = `No signals in the last ${BASELINE} checks. The process is behaving the way it normally does.<br><br>The last signal ("${r.t.toLowerCase()}") was ${ago} checks ago. A stable process still gives an occasional false alarm; one isolated signal is worth a quick look, not a panic.`;
+      el.sigOut.innerHTML = `No new signals in the last ${BASELINE} checks. The process is behaving the way it normally does now.<br><br>The last signal ("${r.t.toLowerCase()}") was ${ago} checks ago. ${stNow === 'unstable'
+        ? 'Those checks are still in the data used for capability, so capability stays on Ppk. Find what happened there, then press Reset for a clean run.'
+        : 'A stable process still gives an occasional false alarm; one isolated signal is worth a quick look, not a panic.'}`;
       return;
     }
     el.sigOut.className = 'signal';
-    const tag = stability() === 'possible' ? '<span class="possible">Possible signal: check before acting</span>' : '';
+    const tag = stNow === 'possible' ? '<span class="possible">Possible signal: check before acting</span>' : '';
     el.sigOut.innerHTML = `<div class="sig-box">${tag}<h4>${r.t}</h4>
       <div class="hint">${ago === 0 ? 'Latest check' : ago + ' check' + (ago > 1 ? 's' : '') + ' ago'}</div>
       <p><span class="lbl">What you see:</span> ${r.see}</p>
@@ -1247,8 +1403,11 @@
     const cap = capability();
     let maxC = Math.max(1, ...counts);
     const curveOn = S.showCurves && cap.ready;
+    const shp = curveOn && cap.shape ? cap.shape : null;
+    const pdfLog = x => x > 0 ? Math.exp(-((Math.log(x) - shp.ml) ** 2) / (2 * shp.sl * shp.sl)) / (x * shp.sl * Math.sqrt(2 * Math.PI)) : 0;
     if (curveOn) {
       maxC = Math.max(maxC, vals.length * bw * pdf(cap.m, cap.m, cap.sW));
+      if (shp) maxC = Math.max(maxC, vals.length * bw * pdfLog(Math.exp(shp.ml - shp.sl * shp.sl)));
     }
     const binPx = (w - padL - padR) / nb;
     const avail = histBot - histTop - 6;
@@ -1311,7 +1470,32 @@
         ctx.stroke(); ctx.setLineDash([]);
       };
       drawCurve(cap.sO, overall, [], 2.2);
-      drawCurve(cap.sW, accent, [6, 4], 2.2);
+      if (!shp || !shp.skewed) drawCurve(cap.sW, accent, [6, 4], 2.2);
+      if (shp) {
+        const shapeCol = css('--shape');
+        ctx.strokeStyle = shapeCol; ctx.lineWidth = 2.4; ctx.beginPath();
+        let started = false;
+        for (let px = padL; px <= w - padR; px += 2) {
+          const v = axMin + (px - padL) / (w - padL - padR) * (axMax - axMin);
+          if (v <= 0) continue;
+          const y = histBot - vals.length * bw * pdfLog(v) * unitH;
+          started ? ctx.lineTo(px, y) : (ctx.moveTo(px, y), started = true);
+        }
+        ctx.stroke();
+        // where each method says "almost no parts go beyond here"
+        const mark = (v, col, label, row) => {
+          if (v < axMin || v > axMax) return;
+          ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+          ctx.beginPath(); ctx.moveTo(X(v), histTop + 4 + row * 14); ctx.lineTo(X(v), histBot); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = col; ctx.font = '600 10.5px ' + css('--font');
+          const right = X(v) > w - padR - 150;
+          ctx.textAlign = right ? 'right' : 'left';
+          ctx.fillText(label, X(v) + (right ? -4 : 4), histTop + 12 + row * 14);
+        };
+        const pt = S.usl != null ? '99.865%' : '0.135%';
+        mark(shp.n3, overall, `bell-shaped ${pt} point`, 1);
+        mark(shp.p99, shapeCol, `real ${pt} point (fitted)`, 2);
+      }
     }
     ctx.strokeStyle = css('--border-strong'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL, histBot + 0.5); ctx.lineTo(w - padR, histBot + 0.5); ctx.stroke();
 
@@ -1384,10 +1568,19 @@
     if (curveOn) {
       ctx.textAlign = 'left'; ctx.font = '11px ' + css('--font');
       const ly = histBot - 30, lx = padL + 4;
-      ctx.strokeStyle = accent; ctx.lineWidth = 2.2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 24, ly); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = css('--text-2'); ctx.fillText('within: what the machine can do (Cp, Cpk)', lx + 30, ly + 4);
-      ctx.strokeStyle = overall; ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 24, ly + 16); ctx.stroke();
-      ctx.fillText('overall: what the customer got (Pp, Ppk)', lx + 30, ly + 20);
+      const shp2 = cap.shape;
+      if (shp2 && shp2.skewed) {
+        ctx.strokeStyle = overall; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 24, ly); ctx.stroke();
+        ctx.fillStyle = css('--text-2'); ctx.fillText('bell-shaped curve (normal calculation)', lx + 30, ly + 4);
+        ctx.strokeStyle = css('--shape'); ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 24, ly + 16); ctx.stroke();
+        ctx.fillText('fitted shape (follows the real data)', lx + 30, ly + 20);
+      } else {
+        ctx.strokeStyle = accent; ctx.lineWidth = 2.2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 24, ly); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = css('--text-2'); ctx.fillText('within: what the machine can do (Cp, Cpk)', lx + 30, ly + 4);
+        ctx.strokeStyle = overall; ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 24, ly + 16); ctx.stroke();
+        ctx.fillText('overall: what the customer got (Pp, Ppk)', lx + 30, ly + 20);
+        if (shp2) { ctx.strokeStyle = css('--shape'); ctx.beginPath(); ctx.moveTo(lx, ly + 32); ctx.lineTo(lx + 24, ly + 32); ctx.stroke(); ctx.fillText('fitted shape (follows the real data)', lx + 30, ly + 36); }
+      }
     }
   }
   function drawCar(ctx, x, y, color) {
@@ -1507,9 +1700,9 @@
       body(v) {
         const s = v.s != null ? v.N(fmt(v.s, 1) + v.u) : '…';
         const six = v.s != null ? v.N(fmt(6 * v.s) + v.u) : '…';
-        return `<p><span class="tag">Your part:</span> σ (sigma) is the typical distance of a ${v.Pl} from the average. Right now σ ≈ ${s}. The shaded bands show the rule that holds for most processes: about <b>68%</b> of parts fall within ±1σ, <b>95%</b> within ±2σ and <b>99.7%</b> within ±3σ (compare with your actual parts under the chart). So the <b>process spread</b>, where almost every part lands, is 6σ ≈ ${six}.</p>
+        return `<p><span class="tag">Your part:</span> σ (sigma) is the typical distance of a ${v.Pl} from the average. Right now σ ≈ ${s}. The shaded bands show the rule for normally distributed (bell-shaped) data: about <b>68%</b> of parts fall within ±1σ, <b>95%</b> within ±2σ and <b>99.7%</b> within ±3σ (compare with your actual parts under the chart). So the <b>process spread</b>, where almost every part lands, is 6σ ≈ ${six}.</p>
         <p><span class="tag">Try this:</span> Change the spread and Restart run. The width in ${esc(S.unit) || 'units'} changes, but the 68% / 95% / 99.7% stay about the same.</p>
-        <p class="note"><b>Process sigma vs sigma level:</b> process sigma (σ) is a measurement in ${esc(S.unit) || 'your unit'}. "Sigma level" (as in Six Sigma) is something else: how many σ fit between the average and the nearest spec limit. People mix these up all the time.</p>
+        <p class="note"><b>Process sigma vs sigma level:</b> process sigma (σ) is a measurement in ${esc(S.unit) || 'your unit'}. "Sigma level" (as in Six Sigma) is something else: how many σ fit between the average and the nearest spec limit. People mix these up all the time. Note: the famous "3.4 ppm" for Six Sigma also assumes the average drifts by 1.5σ over time, so the actual distance to the limit behind that figure is 4.5σ, not 6σ.</p>
         <p class="analogy">Think of it like darts around a bullseye: σ is how wide the scatter is.</p>`;
       },
     },
@@ -1596,15 +1789,41 @@
             <button class="btn" data-guess="not" ${enough ? '' : 'disabled'}>Not capable</button>
           </div>`;
         }
-        const truth = c.ppk >= 1.33 ? 'cap' : c.ppk >= 1.0 ? 'mar' : 'not';
+        // Same rule as the results panel: Cpk if the process is stable, otherwise Ppk.
+        const useCpk = c.stable, ix = useCpk ? c.cpk : c.ppk;
+        const truth = ix >= 1.33 ? 'cap' : ix >= 1.0 ? 'mar' : 'not';
         const names = { cap: 'Capable', mar: 'Marginal', not: 'Not capable' };
         const ok = truth === guess;
         const why = [];
         if (c.cp != null && c.cpk < 0.8 * c.cp) why.push('the average was off-centre (Cpk well below Cp)');
         if (c.cpk != null && c.ppk < 0.85 * c.cpk) why.push('batch-to-batch shifts widened the overall spread (Ppk below Cpk)');
         if (c.cp != null && c.cp < 1) why.push('the spread itself was wider than the tolerance');
-        return `<div class="reveal ${ok ? 'v-good' : 'v-warn'}"><b>${ok ? 'Correct.' : 'Not quite.'}</b> You said <b>${names[guess]}</b>. Ppk (what the customer gets) is <span class="num">${f2(c.ppk)}</span>, which is <b>${names[truth]}</b>.${why.length ? ' Here, ' + why.join(', and ') + '.' : ''}</div>
+        return `<div class="reveal ${ok ? 'v-good' : 'v-warn'}"><b>${ok ? 'Correct.' : 'Not quite.'}</b> You said <b>${names[guess]}</b>. ${useCpk
+          ? `The control chart shows a stable process, so it is judged on Cpk: <span class="num">${f2(c.cpk)}</span>, which is <b>${names[truth]}</b>.`
+          : `The control chart shows signals, so Cpk is not reliable and it is judged on Ppk (what the customer actually received): <span class="num">${f2(c.ppk)}</span>, which is <b>${names[truth]}</b>.`}${why.length ? ' Here, ' + why.join(', and ') + '.' : ''}</div>
         <div class="guess"><button class="btn primary" data-again="1">Try another process</button></div>`;
+      },
+    },
+    {
+      title: 'One-sided limits: is the data really bell-shaped?',
+      keepShape: true,
+      apply() {
+        // needs a one-sided characteristic with a natural floor at zero
+        if (S.type === 'two' || !nonNeg() || !(PRESETS[el.preset.value] || {}).shape) loadPreset('sulphur');
+        S.shape = 'skewed'; setProcess({ cp: 1.33, off: 0, shift: 0 }); setSpeed('fast'); setView(true, false);
+      },
+      pulse: 'f-shape',
+      body(v) {
+        const c = v.c, sh = c.ready ? c.shape : null;
+        const lim = S.usl != null ? 'upper' : 'lower';
+        const nums = sh
+          ? `<p><span class="tag">Your part right now:</span> skewness ${v.N(sh.g1.toFixed(2))} (bell-shaped ≈ 0). <b>Bell-shaped calculation:</b> Ppk ${v.N(f2(c.ppk))}, expects ${v.N(ppm(c.ootO))} beyond the limit. <b>Fitted shape:</b> Ppk ${v.N(f2(sh.ppk))}, expects ${v.N(ppm(sh.oot))}. <b>Actually found:</b> ${v.N(c.found + ' of ' + c.total)} parts.</p>${zeroFoundNote(c.found, c.total)}`
+          : `<p class="note">Collecting readings… (${c.ready ? c.total : 0} so far). Let at least 100 drop.</p>`;
+        return `<p><span class="tag">Your part:</span> ${v.P} has only an ${lim} limit and a natural floor at zero. Data like this is rarely bell-shaped: most values bunch low, with a long tail towards the limit. The purple curve follows the real data; the orange one is the bell shape a normal Cpk assumes.</p>
+        ${nums}
+        <p>Look at the two dashed lines: the bell-shaped calculation says almost nothing goes beyond the orange one, but the real tail runs out to the purple one, closer to the limit. Same average, same σ: only the shape differs, and that is enough to turn "capable" into "not capable".</p>
+        <p><span class="tag">Try this:</span> Set speed to <b>Turbo</b> and let 2,000 or more parts run: the count actually beyond the limit follows the fitted shape, not the bell shape. Then switch <b>Data shape</b> to Bell-shaped and Restart run: now the data is not skewed and the bell-shaped result is the right one. Then load <b>TMT bar yield strength</b>: one-sided, but close to bell-shaped. One-sided does not automatically mean skewed; the histogram decides.</p>
+        <p class="analogy">Workshop line: "Before you trust any Cpk on a one-sided characteristic, look at the histogram."</p>`;
       },
     },
   ];
@@ -1614,7 +1833,7 @@
     learnStep = i;
     el.learn.hidden = false;
     const st = STEPS[i];
-    setScenario(null); S.phi = 0; syncPhi(); st.apply(); resetRun(); S.running = true; el.playBtn.textContent = 'Pause';
+    setScenario(null); S.phi = 0; syncPhi(); if (!st.keepShape) S.shape = 'normal'; st.apply(); syncControls(); resetRun(); S.running = true; el.playBtn.textContent = 'Pause';
     document.querySelectorAll('.pulse').forEach(n => n.classList.remove('pulse'));
     if (st.pulse) $(st.pulse).classList.add('pulse');
     el.learnNo.textContent = `Step ${i + 1} of ${STEPS.length}`;
@@ -1663,6 +1882,8 @@
   });
   el.recalcBtn.addEventListener('click', () => {
     if (subgroups.length < BASELINE) return;
+    const flagged = subgroups.slice(-BASELINE).filter(g => g.rules.length).length;
+    if (flagged && !window.confirm(`${flagged} of the last ${BASELINE} checks have signals.\n\nOn the shop floor, checks with signals are left out of new limits only after the cause is found and fixed. Leaving them in makes the limits wider and hides future problems.\n\nRecalculate from all ${BASELINE} checks anyway?`)) return;
     computeLimits(subgroups.slice(-BASELINE));
     reevaluate();
   });
